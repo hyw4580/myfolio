@@ -1,26 +1,175 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #FFFFFF;
+  --surface: #F8F7F4;
+  --text: #0A0A0A;
+  --muted: #888078;
+  --accent: #0A0A0A;
+  --warm: #9B8B6E;
+  --border: #E8E4DF;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cormorant);
+  --font-body: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-cormorant), serif;
+}
+
+a { color: inherit; }
+
+input:focus {
+  outline: none;
+  border-color: var(--text) !important;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* 스크롤바 숨김 */
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* 포트폴리오 갤러리 이미지 hover */
+.portfolio-img-wrap img {
+  transition: transform 0.4s ease;
+}
+.portfolio-img-wrap:hover img {
+  transform: scale(1.04);
+}
+
+/* ── Nav 반응형 ── */
+.nav-bar {
+  padding: 20px 56px !important;
+}
+@media (max-width: 768px) {
+  .nav-bar {
+    padding: 20px 20px !important;
+  }
+  .nav-desktop {
+    display: none !important;
+  }
+  .nav-hamburger {
+    display: block !important;
+  }
+}
+
+/* ── 포트폴리오 반응형 ── */
+
+/* 헤더 그리드 */
+.pf-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 320px 240px 1fr;
+  gap: 64px;
+  align-items: stretch;
+}
+
+/* 바깥 패딩 */
+.pf-header-outer {
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  padding: 72px 56px 56px;
+}
+
+/* 경력 컬럼 */
+.pf-career-col {
+  border-left: 1px solid #e8e8e8;
+  padding-left: 40px;
+  padding-top: 4px;
+}
+
+/* pill 네비 컨테이너 */
+.pf-pills-bar {
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 0 56px;
+}
+.pf-pills-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  padding: 24px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 콘텐츠 패딩 */
+.pf-content-outer {
+  padding: 56px 56px 100px;
+}
+.pf-content-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* 갤러리 열 */
+.pf-gallery-grid {
+  columns: 3;
+  column-gap: 8px;
+}
+
+/* 비디오 그리드 */
+.pf-video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .pf-header-outer {
+    padding: 32px 20px 32px;
+  }
+  .pf-header-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .pf-career-col {
+    border-left: none;
+    border-top: 1px solid #e8e8e8;
+    padding-left: 0;
+    padding-top: 24px;
+    margin-top: 4px;
+  }
+  .pf-pills-bar {
+    padding: 0 20px;
+  }
+  .pf-pills-inner {
+    padding: 16px 0;
+    gap: 8px;
+  }
+  .pf-content-outer {
+    padding: 32px 20px 64px;
+  }
+  .pf-gallery-grid {
+    columns: 2;
+  }
+  .pf-video-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .pf-gallery-grid {
+    columns: 2;
+  }
 }
