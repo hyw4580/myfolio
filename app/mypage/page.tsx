@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "../components/Nav";
@@ -250,26 +250,46 @@ export default function MyPage() {
               </select>
             </div>
 
-            {/* 출생연도 — 숫자 입력 */}
+            {/* 출생연도 — 고정 높이 스크롤 피커 */}
             {(() => {
               const currentYear = new Date().getFullYear();
               const defaultYear = currentYear - 20;
+              const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+              const selectedYear = profile.birth_year ?? defaultYear;
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              const scrollRef = useRef<HTMLDivElement>(null);
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              useEffect(() => {
+                const el = scrollRef.current;
+                if (!el) return;
+                const item = el.querySelector(`[data-year="${selectedYear}"]`) as HTMLElement | null;
+                if (item) item.scrollIntoView({ block: "center" });
+              }, []);
               return (
                 <div>
                   <label style={labelStyle}>출생연도</label>
-                  <input
-                    type="number"
-                    min={1900}
-                    max={currentYear}
-                    placeholder={String(defaultYear)}
-                    value={profile.birth_year ?? ""}
-                    onChange={e => {
-                      const v = parseInt(e.target.value);
-                      if (!isNaN(v) && v >= 1900 && v <= currentYear) update("birth_year", v);
-                      else if (e.target.value === "") update("birth_year", null);
-                    }}
-                    style={inputStyle}
-                  />
+                  <div
+                    ref={scrollRef}
+                    style={{ ...inputStyle, padding: 0, height: 160, overflowY: "scroll", cursor: "default" }}
+                  >
+                    {years.map(y => (
+                      <div
+                        key={y}
+                        data-year={y}
+                        onClick={() => update("birth_year", y)}
+                        style={{
+                          padding: "9px 14px",
+                          fontSize: "14px",
+                          cursor: "pointer",
+                          background: y === selectedYear ? "var(--text)" : "transparent",
+                          color: y === selectedYear ? "#fff" : "var(--text)",
+                          userSelect: "none",
+                        }}
+                      >
+                        {y}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })()}
