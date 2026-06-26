@@ -1041,9 +1041,9 @@ function ComcardPageInner() {
   const editIdRef       = useRef<string | null>(editId); // 저장 시 update vs insert 판단용
   const [canvasScale,   setCanvasScale]  = useState(1);
   const [controlsOpen,  setControlsOpen] = useState(false);
-  const [userZoom,      setUserZoom]     = useState(1);
-  const pinchRef    = useRef<{ dist: number; zoom: number } | null>(null);
-  const userZoomRef = useRef(1);
+  const pinchRef        = useRef<{ dist: number; zoom: number } | null>(null);
+  const userZoomRef     = useRef(1);
+  const canvasZoomWrapRef = useRef<HTMLDivElement>(null);
 
   // 기존 카드 불러오기
   useEffect(() => {
@@ -1178,6 +1178,14 @@ function ComcardPageInner() {
       return Math.sqrt(dx * dx + dy * dy);
     };
 
+    const applyZoom = (next: number) => {
+      const clamped = Math.min(2.0, Math.max(0.4, next));
+      userZoomRef.current = clamped;
+      if (canvasZoomWrapRef.current) {
+        canvasZoomWrapRef.current.style.transform = `scale(${clamped})`;
+      }
+    };
+
     const onStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
         pinchRef.current = { dist: getDist(e.touches), zoom: userZoomRef.current };
@@ -1186,10 +1194,7 @@ function ComcardPageInner() {
     const onMove = (e: TouchEvent) => {
       if (e.touches.length !== 2 || !pinchRef.current) return;
       e.preventDefault();
-      const ratio = getDist(e.touches) / pinchRef.current.dist;
-      const next = Math.min(2.0, Math.max(0.4, pinchRef.current.zoom * ratio));
-      userZoomRef.current = next;
-      setUserZoom(Math.round(next * 20) / 20);
+      applyZoom(pinchRef.current.zoom * (getDist(e.touches) / pinchRef.current.dist));
     };
     const onEnd = () => { pinchRef.current = null; };
 
@@ -1201,10 +1206,7 @@ function ComcardPageInner() {
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey) return;
       e.preventDefault();
-      const delta = -e.deltaY * 0.001;
-      const next = Math.min(2.0, Math.max(0.4, userZoomRef.current + delta));
-      userZoomRef.current = next;
-      setUserZoom(Math.round(next * 20) / 20);
+      applyZoom(userZoomRef.current * (1 - e.deltaY * 0.003));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
 
@@ -1280,8 +1282,7 @@ function ComcardPageInner() {
           <div className="comcard-design-layout">
             {/* 캔버스 영역 */}
             <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
-              {/* userZoom은 레이아웃 크기에 영향 없이 시각적 transform만 적용 */}
-              <div style={{ transform: `scale(${userZoom})`, transformOrigin: "center top", flexShrink: 0 }}>
+              <div ref={canvasZoomWrapRef} style={{ transform: "scale(1)", transformOrigin: "center top", flexShrink: 0 }}>
                 <CanvasEditor
                   canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                   photos={photos} setPhotos={setPhotos}
