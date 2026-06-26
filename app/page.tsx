@@ -67,8 +67,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Gallery Preview — 모델 없으면 섹션 자체 숨김 */}
-      {displayModels && <section id="gallery" className="home-section-pad">
+      {/* Gallery Preview — 공개 모델 있을 때만 표시 */}
+      {displayModels && displayModels.length > 0 && <section id="gallery" className="home-section-pad">
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px", flexWrap: "wrap", gap: "16px" }}>
             <div>
@@ -122,6 +122,7 @@ export default async function Home() {
           ) : null}
         </div>
       </section>}
+
 
       {/* Features */}
       <section id="features" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
