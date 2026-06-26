@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   description: "모델을 위한 디지털 컴카드 플랫폼",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
