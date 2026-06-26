@@ -302,11 +302,24 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const snapXs: number[] = [];
         const snapYs: number[] = [];
 
+        // 칼선(재단선) snap — 2mm in canvas px
+        const m = (cv.w > cv.h ? cv.w / 297 : cv.w / 210) * 2;
+
         // Canvas edge snaps
         if (Math.abs(nx) < SNAP)                         { nx = 0; snapXs.push(0); }
         else if (Math.abs(nx + moving.w - cv.w) < SNAP)  { nx = cv.w - moving.w; snapXs.push(cv.w); }
         if (Math.abs(ny) < SNAP)                         { ny = 0; snapYs.push(0); }
         else if (Math.abs(ny + ph - cv.h) < SNAP)        { ny = cv.h - ph; snapYs.push(cv.h); }
+
+        // 칼선 inner edge snaps (left/right/top/bottom crop lines)
+        if (!snapXs.length) {
+          if      (Math.abs(nx - m) < SNAP)              { nx = m; snapXs.push(m); }
+          else if (Math.abs(nx + moving.w - (cv.w - m)) < SNAP) { nx = cv.w - m - moving.w; snapXs.push(cv.w - m); }
+        }
+        if (!snapYs.length) {
+          if      (Math.abs(ny - m) < SNAP)              { ny = m; snapYs.push(m); }
+          else if (Math.abs(ny + ph - (cv.h - m)) < SNAP) { ny = cv.h - m - ph; snapYs.push(cv.h - m); }
+        }
         // Canvas center snaps
         const midX = cv.w / 2, midY = cv.h / 2;
         if (!snapXs.length && Math.abs(nx + moving.w / 2 - midX) < SNAP) { nx = midX - moving.w / 2; snapXs.push(midX); }
@@ -396,13 +409,17 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const snapYs: number[] = [];
         const others = prev.filter(p => p.id !== d.id);
 
+        // 칼선 2mm in canvas px
+        const m = (cv.w > cv.h ? cv.w / 297 : cv.w / 210) * 2;
+
         // Edge to snap depends on corner
         const isRightCorner  = d.corner === "br" || d.corner === "tr";
         const isBottomCorner = d.corner === "br" || d.corner === "bl";
 
         if (isRightCorner) {
           const rightEdge = newX + newW;
-          if (Math.abs(rightEdge - cv.w) < RESIZE_SNAP) { newW = cv.w - newX; snapXs.push(cv.w); }
+          if (Math.abs(rightEdge - cv.w) < RESIZE_SNAP)           { newW = cv.w - newX; snapXs.push(cv.w); }
+          else if (Math.abs(rightEdge - (cv.w - m)) < RESIZE_SNAP) { newW = cv.w - m - newX; snapXs.push(cv.w - m); }
           else for (const o of others) {
             if (Math.abs(rightEdge - o.x) < RESIZE_SNAP)             { newW = o.x - newX; snapXs.push(o.x); break; }
             if (Math.abs(rightEdge - (o.x + o.w)) < RESIZE_SNAP)     { newW = o.x + o.w - newX; snapXs.push(o.x + o.w); break; }
@@ -410,7 +427,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         } else {
           // Left corner: snap left edge (newX)
           const snapX = (t: number) => { newX = t; newW = d.ox + d.ow - t; snapXs.push(t); };
-          if (Math.abs(newX) < RESIZE_SNAP) snapX(0);
+          if (Math.abs(newX) < RESIZE_SNAP)       snapX(0);
+          else if (Math.abs(newX - m) < RESIZE_SNAP) snapX(m);
           else for (const o of others) {
             if (Math.abs(newX - o.x) < RESIZE_SNAP)           { snapX(o.x); break; }
             if (Math.abs(newX - (o.x + o.w)) < RESIZE_SNAP)   { snapX(o.x + o.w); break; }
@@ -419,7 +437,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
         if (isBottomCorner) {
           const bottomEdge = newY + Math.round(newW * (4/3));
-          if (Math.abs(bottomEdge - cv.h) < RESIZE_SNAP) { newW = Math.round((cv.h - newY) / (4/3)); snapYs.push(cv.h); }
+          if (Math.abs(bottomEdge - cv.h) < RESIZE_SNAP)            { newW = Math.round((cv.h - newY) / (4/3)); snapYs.push(cv.h); }
+          else if (Math.abs(bottomEdge - (cv.h - m)) < RESIZE_SNAP) { newW = Math.round((cv.h - m - newY) / (4/3)); snapYs.push(cv.h - m); }
           else for (const o of others) {
             const oh2 = Math.round(o.w * (4/3));
             if (Math.abs(bottomEdge - o.y) < RESIZE_SNAP)           { newW = Math.round((o.y - newY) / (4/3)); snapYs.push(o.y); break; }
@@ -429,7 +448,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
           // Top corner: snap top edge (newY), bottom fixed
           const bottomFixed = d.oy + oh;
           const snapY = (t: number) => { newY = t; newW = Math.round((bottomFixed - t) / (4/3)); snapYs.push(t); };
-          if (Math.abs(newY) < RESIZE_SNAP) snapY(0);
+          if (Math.abs(newY) < RESIZE_SNAP)       snapY(0);
+          else if (Math.abs(newY - m) < RESIZE_SNAP) snapY(m);
           else for (const o of others) {
             const oh2 = Math.round(o.w * (4/3));
             if (Math.abs(newY - o.y) < RESIZE_SNAP)           { snapY(o.y); break; }
