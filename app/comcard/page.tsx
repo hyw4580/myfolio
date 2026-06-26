@@ -283,9 +283,9 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     scaleRef.current = scale;
 
     const onMove = (e: MouseEvent | TouchEvent) => {
-      if (e.cancelable) e.preventDefault();
       const d = dragRef.current;
-      if (!d) return;
+      if (!d) return; // 드래그 중이 아니면 스크롤 허용
+      if (e.cancelable) e.preventDefault();
       const { clientX, clientY } = getClientPos(e);
       const s = scaleRef.current;
 
@@ -753,57 +753,87 @@ function hexToHsv(hex: string): [number, number, number] {
 }
 
 function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChange: (c: string) => void; onClose: () => void }) {
+  const R = 80; // 색상환 반지름
   const [hue, setHue] = useState(() => hexToHsv(value)[0]);
   const [sat, setSat] = useState(() => hexToHsv(value)[1]);
   const [val, setVal] = useState(() => hexToHsv(value)[2]);
   const [hex, setHex] = useState(value);
-  const boxRef = useRef<HTMLDivElement>(null);
+  const wheelRef = useRef<HTMLDivElement>(null);
 
   const emit = (h: number, s: number, v: number) => {
-    const c = hsvToHex(h, s, v);
-    setHex(c); onChange(c);
+    const c = hsvToHex(h, s, v); setHex(c); onChange(c);
   };
 
-  const updateBox = (clientX: number, clientY: number) => {
-    const rect = boxRef.current?.getBoundingClientRect();
+  const updateWheel = (clientX: number, clientY: number) => {
+    const rect = wheelRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const ns = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100));
-    const nv = Math.max(0, Math.min(100, (1 - (clientY - rect.top) / rect.height) * 100));
-    setSat(ns); setVal(nv); emit(hue, ns, nv);
+    const dx = clientX - rect.left - R;
+    const dy = clientY - rect.top - R;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const nh = ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360;
+    const ns = Math.min(100, (dist / R) * 100);
+    setHue(nh); setSat(ns); emit(nh, ns, val);
   };
+
+  // 도트 위치 (색상환 위)
+  const hRad = (hue * Math.PI) / 180;
+  const dotDist = (sat / 100) * R;
+  const dotX = R + dotDist * Math.sin(hRad);
+  const dotY = R - dotDist * Math.cos(hRad);
+
+  // 밝기 슬라이더 배경
+  const pureColor = hsvToHex(hue, sat, 100);
 
   return (
     <div
-      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "12px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", left: 0 }}
+      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", left: 0 }}
       onMouseDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
-      {/* 2D gradient box */}
-      <div
-        ref={boxRef}
-        style={{ width: "100%", height: "150px", position: "relative", borderRadius: "2px", cursor: "crosshair", touchAction: "none", marginBottom: "10px", flexShrink: 0 }}
-        onMouseDown={e => { e.preventDefault(); updateBox(e.clientX, e.clientY); }}
-        onMouseMove={e => { if (e.buttons === 1) updateBox(e.clientX, e.clientY); }}
-        onTouchStart={e => { e.preventDefault(); e.stopPropagation(); updateBox(e.touches[0].clientX, e.touches[0].clientY); }}
-        onTouchMove={e => { e.preventDefault(); e.stopPropagation(); updateBox(e.touches[0].clientX, e.touches[0].clientY); }}
-      >
-        <div style={{ position: "absolute", inset: 0, background: `hsl(${hue},100%,50%)` }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right,#fff,transparent)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,#000,transparent)" }} />
-        <div style={{ position: "absolute", left: `${sat}%`, top: `${100 - val}%`, width: 14, height: 14, borderRadius: "50%", border: "2px solid #fff", transform: "translate(-50%,-50%)", pointerEvents: "none", boxShadow: "0 0 3px rgba(0,0,0,0.5)" }} />
+      {/* 색상환 */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+        <div
+          ref={wheelRef}
+          style={{
+            width: R * 2, height: R * 2, borderRadius: "50%", position: "relative",
+            cursor: "crosshair", touchAction: "none", flexShrink: 0,
+            background: `
+              radial-gradient(circle, white 0%, rgba(255,255,255,0) 70%),
+              conic-gradient(
+                hsl(0,100%,50%) 0deg, hsl(30,100%,50%) 30deg, hsl(60,100%,50%) 60deg,
+                hsl(90,100%,50%) 90deg, hsl(120,100%,50%) 120deg, hsl(150,100%,50%) 150deg,
+                hsl(180,100%,50%) 180deg, hsl(210,100%,50%) 210deg, hsl(240,100%,50%) 240deg,
+                hsl(270,100%,50%) 270deg, hsl(300,100%,50%) 300deg, hsl(330,100%,50%) 330deg,
+                hsl(360,100%,50%) 360deg
+              )`,
+          }}
+          onMouseDown={e => { e.preventDefault(); updateWheel(e.clientX, e.clientY); }}
+          onMouseMove={e => { if (e.buttons === 1) updateWheel(e.clientX, e.clientY); }}
+          onTouchStart={e => { e.preventDefault(); e.stopPropagation(); updateWheel(e.touches[0].clientX, e.touches[0].clientY); }}
+          onTouchMove={e => { e.preventDefault(); e.stopPropagation(); updateWheel(e.touches[0].clientX, e.touches[0].clientY); }}
+        >
+          <div style={{
+            position: "absolute", left: dotX, top: dotY,
+            width: 14, height: 14, borderRadius: "50%",
+            border: "2px solid #fff", background: hsvToHex(hue, sat, val),
+            transform: "translate(-50%,-50%)", pointerEvents: "none",
+            boxShadow: "0 0 3px rgba(0,0,0,0.5)",
+          }} />
+        </div>
       </div>
-      {/* Hue slider */}
-      <input type="range" min="0" max="360" value={Math.round(hue)}
+      {/* 밝기 슬라이더 */}
+      <input type="range" min="0" max="100" value={Math.round(val)}
         style={{ width: "100%", marginBottom: "10px", height: "12px", borderRadius: "6px", cursor: "pointer",
-          background: "linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)",
+          background: `linear-gradient(to right, #000, ${pureColor})`,
           appearance: "none" as const, outline: "none" }}
-        onChange={e => { const nh = +e.target.value; setHue(nh); emit(nh, sat, val); }}
+        onChange={e => { const nv = +e.target.value; setVal(nv); emit(hue, sat, nv); }}
         onTouchStart={e => e.stopPropagation()}
       />
-      {/* Preview + hex */}
+      {/* 미리보기 + hex */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <div style={{ width: 28, height: 28, background: value, border: "1px solid var(--border)", flexShrink: 0 }} />
-        <input type="text" value={hex} onChange={e => { setHex(e.target.value); if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) { const [nh,ns,nv] = hexToHsv(e.target.value); setHue(nh); setSat(ns); setVal(nv); onChange(e.target.value); } }}
+        <input type="text" value={hex}
+          onChange={e => { setHex(e.target.value); if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) { const [nh,ns,nv] = hexToHsv(e.target.value); setHue(nh); setSat(ns); setVal(nv); onChange(e.target.value); } }}
           style={{ flex: 1, fontSize: "11px", padding: "4px 6px", border: "1px solid var(--border)", fontFamily: "monospace", minWidth: 0 }} />
         <button onClick={onClose} style={{ fontSize: "12px", border: "1px solid var(--border)", background: "#fff", padding: "3px 8px", cursor: "pointer", flexShrink: 0 }}>✕</button>
       </div>
