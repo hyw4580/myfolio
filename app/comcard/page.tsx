@@ -613,7 +613,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       {/* Text: English Name */}
       {nameField && nameBlock && (
         <TextElement block={nameBlock} onSize={handleTextSize} onMoveStart={(pos) => { dragRef.current = { type: "text-move", id: "name", mx: pos.clientX, my: pos.clientY, ox: nameBlock.x, oy: nameBlock.y }; }}>
-          <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontStyle: "italic", fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>{nameField.value}</span>
+          <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>{nameField.value}</span>
         </TextElement>
       )}
 
@@ -1125,7 +1125,7 @@ function ComcardPageInner() {
         {/* ── Step: Orient ── */}
         {step === "orient" && (
           <div style={{ maxWidth: "640px", margin: "0 auto", padding: "60px 24px 80px" }}>
-            <h1 className="font-display" style={{ fontSize: "44px", fontStyle: "italic", fontWeight: 400, marginBottom: "12px" }}>Comp Card</h1>
+            <h1 className="font-display" style={{ fontSize: "44px", fontWeight: 400, marginBottom: "12px" }}>Comp Card</h1>
             <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "48px" }}>먼저 컴카드 방향을 선택해주세요.</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "36px" }}>
               {(Object.entries(CANVAS) as [CanvasType, typeof CANVAS[CanvasType]][]).map(([key, cfg]) => (
@@ -1152,7 +1152,7 @@ function ComcardPageInner() {
         {/* ── Step: Fields ── */}
         {step === "fields" && (
           <div style={{ maxWidth: "640px", margin: "0 auto", padding: "60px 24px 80px" }}>
-            <h1 className="font-display" style={{ fontSize: "44px", fontStyle: "italic", fontWeight: 400, marginBottom: "12px" }}>Select Fields</h1>
+            <h1 className="font-display" style={{ fontSize: "44px", fontWeight: 400, marginBottom: "12px" }}>Select Fields</h1>
             <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "32px" }}>컴카드에 표시할 항목을 선택하세요.</p>
             <div style={{ border: "1px solid var(--border)", marginBottom: "28px" }}>
               {profileFields.map(f => (

@@ -37,7 +37,7 @@ function LoginContent() {
     }}>
       {/* Logo */}
       <Link href="/" style={{ textDecoration: "none", marginBottom: "56px" }}>
-        <span style={{ fontFamily: "var(--font-cormorant), var(--font-korean), serif", fontSize: "28px", fontStyle: "italic", color: "#0A0A0A", letterSpacing: "-0.01em" }}>
+        <span style={{ fontFamily: "var(--font-cormorant), var(--font-korean), serif", fontSize: "28px", color: "#0A0A0A", letterSpacing: "-0.01em" }}>
           myfolio
         </span>
       </Link>

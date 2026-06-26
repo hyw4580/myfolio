@@ -107,7 +107,7 @@ export default function GalleryPage() {
         {/* Filter sidebar */}
         <aside className={`gallery-sidebar${filterOpen ? " open" : ""}`}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "32px" }}>
-            <h2 className="font-display" style={{ fontSize: "22px", fontStyle: "italic", fontWeight: 500 }}>Filter</h2>
+            <h2 className="font-display" style={{ fontSize: "22px", fontWeight: 500 }}>Filter</h2>
             <button onClick={resetAll} style={{
               fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase",
               border: "none", background: "none", color: "var(--muted)", cursor: "pointer", textDecoration: "underline",
@@ -163,7 +163,7 @@ export default function GalleryPage() {
         {/* Model grid */}
         <main className="gallery-main">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "36px", flexWrap: "wrap", gap: "12px" }}>
-            <h1 className="font-display" style={{ fontSize: "36px", fontStyle: "italic", fontWeight: 400 }}>
+            <h1 className="font-display" style={{ fontSize: "36px", fontWeight: 400 }}>
               Browse Models
             </h1>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -189,7 +189,7 @@ export default function GalleryPage() {
                   </div>
                   <div style={{ padding: "16px 0 28px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <h3 className="font-display" style={{ fontSize: "20px", fontStyle: "italic", fontWeight: 400 }}>
+                      <h3 className="font-display" style={{ fontSize: "20px", fontWeight: 400 }}>
                         {model.engName}
                       </h3>
                       <span style={{ fontSize: "12px", color: "var(--muted)" }}>{model.height}cm</span>

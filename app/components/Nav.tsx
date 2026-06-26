@@ -52,7 +52,7 @@ export default function Nav() {
         className="nav-bar"
       >
         <Link href="/" className="font-display" style={{
-          fontSize: "20px", fontWeight: 400, fontStyle: "italic",
+          fontSize: "20px", fontWeight: 400,
           letterSpacing: "0.04em", textDecoration: "none", color: "var(--text)",
         }}>
           myfolio

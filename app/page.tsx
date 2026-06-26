@@ -41,7 +41,7 @@ export default async function Home() {
             Model Digital Portfolio
           </p>
           <h1 className="font-display" style={{
-            fontSize: "clamp(36px, 10vw, 120px)", fontWeight: 400,
+            fontSize: "clamp(28px, 6vw, 80px)", fontWeight: 400,
             lineHeight: 1.1, letterSpacing: "-0.01em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
           }}>
             모델의 첫인상을<br />완성하다
@@ -73,7 +73,7 @@ export default async function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px", flexWrap: "wrap", gap: "16px" }}>
             <div>
               <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "12px" }}>Gallery</p>
-              <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1 }}>
+              <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, lineHeight: 1.1 }}>
                 Models on myfolio
               </h2>
             </div>
@@ -103,7 +103,7 @@ export default async function Home() {
                       </div>
                       <div style={{ padding: "16px 0 24px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                          <h3 className="font-display" style={{ fontSize: "18px", fontStyle: "italic", fontWeight: 400 }}>
+                          <h3 className="font-display" style={{ fontSize: "18px", fontWeight: 400 }}>
                             {model.eng_name}
                           </h3>
                           {model.height && <span style={{ fontSize: "12px", color: "var(--muted)" }}>{model.height}cm</span>}
@@ -129,7 +129,7 @@ export default async function Home() {
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "72px" }} className="home-features-title-gap">
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "12px" }}>Features</p>
-            <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1 }}>
+            <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, lineHeight: 1.1 }}>
               Everything you need, in one place
             </h2>
           </div>
@@ -155,7 +155,7 @@ export default async function Home() {
                   borderBottom: "1px solid var(--border)", height: "100%",
                 }}>
                   <span style={{ fontSize: "11px", letterSpacing: "0.2em", color: "var(--muted)", display: "block", marginBottom: "32px" }}>{f.num}</span>
-                  <h3 className="font-display" style={{ fontSize: "28px", fontWeight: 400, fontStyle: "italic", marginBottom: "20px", lineHeight: 1.2 }}>
+                  <h3 className="font-display" style={{ fontSize: "28px", fontWeight: 400, marginBottom: "20px", lineHeight: 1.2 }}>
                     {f.title}
                   </h3>
                   <p style={{ fontSize: "14px", color: "var(--muted)", lineHeight: 1.9 }}>{f.desc}</p>
@@ -178,7 +178,7 @@ export default async function Home() {
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>
               Become a Model
             </p>
-            <h2 className="font-display" style={{ fontSize: "clamp(40px, 4vw, 60px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "28px" }}>
+            <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "28px" }}>
               지금 바로<br />나를 알려보세요
             </h2>
             <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, marginBottom: "44px" }}>
@@ -212,7 +212,7 @@ export default async function Home() {
       <section id="contact" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
-          <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 400, marginBottom: "20px", lineHeight: 1.1 }}>
+          <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, marginBottom: "20px", lineHeight: 1.1 }}>
             궁금한 점이 있으신가요?
           </h2>
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.8, marginBottom: "52px" }}>
@@ -239,7 +239,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="home-footer" style={{ borderTop: "1px solid var(--border)" }}>
-        <span className="font-display" style={{ fontSize: "18px", fontWeight: 400, fontStyle: "italic" }}>myfolio</span>
+        <span className="font-display" style={{ fontSize: "18px", fontWeight: 400 }}>myfolio</span>
         <div className="home-footer-links">
           <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>이용약관</a>
           <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>개인정보처리방침</a>

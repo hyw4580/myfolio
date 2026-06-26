@@ -29,12 +29,12 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
   const { id: param } = await params;
   const supabase = await createClient();
 
-  // slug로 먼저 조회, 없으면 UUID로 조회
+  // slug 또는 UUID로 조회 — is_public 무관 (링크 공유용)
   let { data: profile } = await supabase
-    .from("profiles").select("*").eq("slug", param).eq("is_public", true).single();
+    .from("profiles").select("*").eq("slug", param).single();
   if (!profile) {
     const { data } = await supabase
-      .from("profiles").select("*").eq("id", param).eq("is_public", true).single();
+      .from("profiles").select("*").eq("id", param).single();
     profile = data;
   }
 

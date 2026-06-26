@@ -69,7 +69,7 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900 }: {
         {/* English Name */}
         {nameField && nameBlock && (
           <div style={{ position: "absolute", left: nameBlock.x, top: nameBlock.y, pointerEvents: "none" }}>
-            <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontStyle: "italic", fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>
+            <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>
               {nameField.value}
             </span>
           </div>
