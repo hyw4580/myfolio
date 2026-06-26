@@ -525,6 +525,20 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} />
       ))}
 
+      {/* 2mm 칼선 (재단선) — 인쇄 시 재단될 영역 표시 */}
+      {(() => {
+        const mm2px = (w > h ? w / 297 : w / 210) * 2; // 2mm in canvas px
+        return (
+          <div className="crop-guide" style={{
+            position: "absolute",
+            inset: mm2px,
+            border: "0.5px dashed rgba(180,0,0,0.45)",
+            pointerEvents: "none",
+            zIndex: 100,
+          }} />
+        );
+      })()}
+
       {/* Snap guide lines */}
       {snapLines.xs.map((x, i) => (
         <div key={`sx${i}`} style={{ position: "absolute", left: x - 0.5, top: 0, width: 1, height: h, background: "#0066FF", opacity: 0.7, zIndex: 50, pointerEvents: "none" }} />
@@ -865,7 +879,7 @@ function ComcardPageInner() {
   const saveImage = async () => {
     if (!canvasRef.current) return;
     const { default: html2canvas } = await import("html2canvas");
-    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2 });
+    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2, ignoreElements: (el) => el.classList.contains("crop-guide") });
     const a = document.createElement("a");
     a.href = c.toDataURL("image/png");
     a.download = "myfolio-comcard.png";
@@ -876,11 +890,14 @@ function ComcardPageInner() {
     if (!canvasRef.current) return;
     const { default: html2canvas } = await import("html2canvas");
     const { default: jsPDF } = await import("jspdf");
-    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2 });
+    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2, ignoreElements: (el) => el.classList.contains("crop-guide") });
     const imgData = c.toDataURL("image/png");
     const { w, h } = CANVAS[canvas];
-    const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "px", format: [w * 2, h * 2] });
-    pdf.addImage(imgData, "PNG", 0, 0, w * 2, h * 2);
+    const orientation = w > h ? "landscape" : "portrait";
+    const pdf = new jsPDF({ orientation, unit: "mm", format: "a4" });
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData, "PNG", 0, 0, pw, ph);
     pdf.save("myfolio-comcard.pdf");
   };
 
@@ -993,7 +1010,26 @@ function ComcardPageInner() {
         {/* ── Step: Design ── */}
         {step === "design" && (
           <div className="comcard-design-layout">
-            {/* 데스크탑: 좌측 사이드바 / 모바일: 하단 드로어 */}
+            {/* 캔버스 영역 (데스크탑: flex 1 / 모바일: order 1) */}
+            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
+              <CanvasEditor
+                canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
+                photos={photos} setPhotos={setPhotos}
+                textBlocks={textBlocks} setTextBlocks={setTextBlocks}
+                selectedFields={selectedData} statsLayout={statsLayout}
+                onPhotoResize={(canvasW) => { lastResizedWRef.current = canvasW; }}
+                canvasRef={canvasRef}
+                scale={canvasScale}
+              />
+              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale, flexWrap: "wrap" }}>
+                <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, minWidth: "120px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
+                </button>
+                <button onClick={saveImage} style={{ flex: 1, minWidth: "100px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
+                <button onClick={downloadPDF} style={{ flex: 1, minWidth: "120px", background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
+              </div>
+            </main>
+            {/* 컨트롤 사이드바 (데스크탑: 좌측 / 모바일: 캔버스 아래 full-width) */}
             <aside className="comcard-sidebar">
               <div style={{ marginBottom: "20px", paddingBottom: "16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button onClick={() => setStep("fields")} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", background: "none", color: "var(--muted)", cursor: "pointer" }}>← Back</button>
@@ -1010,46 +1046,6 @@ function ComcardPageInner() {
                 statsLayout={statsLayout} setStatsLayout={setStatsLayout}
               />
             </aside>
-            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
-              {/* 모바일 전용 컨트롤 토글 */}
-              <div className="comcard-mobile-toggle">
-                <button onClick={() => setStep("fields")} style={{ fontSize: "11px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: "#fff", padding: "8px 14px", cursor: "pointer", color: "var(--muted)" }}>← Back</button>
-                <button onClick={() => setControlsOpen(o => !o)} style={{ fontSize: "11px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: controlsOpen ? "var(--text)" : "#fff", color: controlsOpen ? "#fff" : "var(--text)", padding: "8px 18px", cursor: "pointer" }}>
-                  {controlsOpen ? "닫기" : "편집 ▸"}
-                </button>
-              </div>
-              {/* 모바일 컨트롤 패널 */}
-              {controlsOpen && (
-                <div className="comcard-mobile-controls">
-                  <ControlsPanel
-                    canvas={canvas}
-                    bgColor={bgColor}   setBgColor={setBgColor}
-                    txtColor={txtColor} setTxtColor={setTxtColor}
-                    fontWeight={fontWeight} setFontWeight={setFontWeight}
-                    photos={photos}     setPhotos={setPhotos}
-                    onAddPhoto={addPhoto} onRemovePhoto={removePhoto}
-                    textBlocks={textBlocks} setTextBlocks={setTextBlocks}
-                    statsLayout={statsLayout} setStatsLayout={setStatsLayout}
-                  />
-                </div>
-              )}
-              <CanvasEditor
-                canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
-                photos={photos} setPhotos={setPhotos}
-                textBlocks={textBlocks} setTextBlocks={setTextBlocks}
-                selectedFields={selectedData} statsLayout={statsLayout}
-                onPhotoResize={(w) => { lastResizedWRef.current = w; }}
-                canvasRef={canvasRef}
-                scale={canvasScale}
-              />
-              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale, flexWrap: "wrap" }}>
-                <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, minWidth: "120px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
-                  {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
-                </button>
-                <button onClick={saveImage} style={{ flex: 1, minWidth: "100px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
-                <button onClick={downloadPDF} style={{ flex: 1, minWidth: "120px", background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
-              </div>
-            </main>
           </div>
         )}
       </div>

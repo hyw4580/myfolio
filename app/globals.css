@@ -184,23 +184,24 @@ button:focus {
   padding: 24px 18px;
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  order: -1;
 }
 .comcard-mobile-toggle { display: none; }
 .comcard-mobile-controls { display: none; }
 
 @media (max-width: 768px) {
   .comcard-design-layout { flex-direction: column; }
-  .comcard-sidebar { display: none; }
+  .comcard-sidebar {
+    width: 100%; border-right: none;
+    border-top: 1px solid var(--border);
+    padding: 24px 20px 40px;
+    order: 2;
+  }
   .comcard-mobile-toggle {
-    display: flex; gap: 8px; justify-content: space-between;
+    display: flex; gap: 8px; justify-content: flex-start;
     width: 100%; margin-bottom: 16px;
   }
-  .comcard-mobile-controls {
-    display: block;
-    width: 100%; background: #fff;
-    border: 1px solid var(--border);
-    padding: 20px; margin-bottom: 20px;
-  }
+  .comcard-mobile-controls { display: none; }
 }
 
 /* ── 홈페이지 반응형 ── */
