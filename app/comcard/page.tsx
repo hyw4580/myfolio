@@ -26,6 +26,15 @@ type DragState  =
 const SNAP        =  4; // move snap threshold (px)
 const RESIZE_SNAP =  4; // resize snap threshold
 
+/* ── touch/mouse 좌표 통합 헬퍼 ── */
+function getClientPos(e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): { clientX: number; clientY: number } {
+  if ("touches" in e) {
+    const t = (e as TouchEvent | React.TouchEvent).touches[0] ?? (e as TouchEvent | React.TouchEvent).changedTouches[0];
+    return { clientX: t.clientX, clientY: t.clientY };
+  }
+  return { clientX: (e as MouseEvent | React.MouseEvent).clientX, clientY: (e as MouseEvent | React.MouseEvent).clientY };
+}
+
 /* ─────────────────────── mock profile ──────────────────────── */
 const mockProfile: Record<string, string> = {
   engName: "Emma Johnson", korName: "엠마 존슨",
@@ -149,10 +158,10 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
       }
       {isSelected && (
         <>
-          <div style={{ position: "absolute", top:    -6, left:  -6, width: 14, height: 14, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", top:    -6, right: -6, width: 14, height: 14, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -6, left:  -6, width: 14, height: 14, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -6, right: -6, width: 14, height: 14, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top:    -10, left:  -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top:    -10, right: -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -10, left:  -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -10, right: -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
         </>
       )}
       {isMain && <span style={{ position: "absolute", top: 6, left: 6, fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", background: "rgba(0,0,0,0.5)", color: "#fff", padding: "2px 7px", pointerEvents: "none" }}>Main</span>}
@@ -164,7 +173,7 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
 function TextElement({ block, children, onMoveStart, onSize }: {
   block: TextBlock;
   children: React.ReactNode;
-  onMoveStart: (e: React.MouseEvent) => void;
+  onMoveStart: (pos: { clientX: number; clientY: number }) => void;
   onSize: (id: string, w: number, h: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -183,10 +192,11 @@ function TextElement({ block, children, onMoveStart, onSize }: {
   return (
     <div
       ref={divRef}
-      onMouseDown={(e) => { e.stopPropagation(); onMoveStart(e); }}
+      onMouseDown={(e) => { e.stopPropagation(); onMoveStart(getClientPos(e)); }}
+      onTouchStart={(e) => { e.stopPropagation(); e.preventDefault(); onMoveStart(getClientPos(e)); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ position: "absolute", left: block.x, top: block.y, cursor: "grab", userSelect: "none", zIndex: 20, outline: hovered ? "1px dashed rgba(0,102,255,0.5)" : "1px dashed transparent", outlineOffset: "4px" }}
+      style={{ position: "absolute", left: block.x, top: block.y, cursor: "grab", userSelect: "none", zIndex: 20, outline: hovered ? "1px dashed rgba(0,102,255,0.5)" : "1px dashed transparent", outlineOffset: "4px", touchAction: "none" }}
     >
       {hovered && <span style={{ position: "absolute", top: -16, left: 0, fontSize: "8px", letterSpacing: "0.1em", color: "#0066FF", whiteSpace: "nowrap", textTransform: "uppercase", pointerEvents: "none" }}>drag</span>}
       {children}
@@ -197,7 +207,7 @@ function TextElement({ block, children, onMoveStart, onSize }: {
 /* ─────────────── canvas editor ─────────────────────────────── */
 const RESIZE_ZONE = 22;
 
-function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos, textBlocks, setTextBlocks, selectedFields, statsLayout, onPhotoResize, canvasRef }: {
+function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos, textBlocks, setTextBlocks, selectedFields, statsLayout, onPhotoResize, canvasRef, scale }: {
   canvas: CanvasType; bgColor: string; txtColor: string; fontWeight: number;
   photos: PhotoItem[]; setPhotos: React.Dispatch<React.SetStateAction<PhotoItem[]>>;
   textBlocks: TextBlock[]; setTextBlocks: React.Dispatch<React.SetStateAction<TextBlock[]>>;
@@ -205,6 +215,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   statsLayout: "1단" | "2단";
   onPhotoResize: (w: number) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
+  scale: number;
 }) {
   const [selectedId, setSelectedId]   = useState<number | null>(null);
   const [snapLines, setSnapLines]     = useState<SnapLines>({ xs: [], ys: [] });
@@ -225,9 +236,15 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const subColor  = bgColor === "#0C0C0C" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
+    const scaleRef = { current: scale };
+    scaleRef.current = scale;
+
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
       const d = dragRef.current;
       if (!d) return;
+      const { clientX, clientY } = getClientPos(e);
+      const s = scaleRef.current;
 
       if (d.type === "photo-move") {
         const prev    = photosRef.current;
@@ -236,8 +253,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const ph = Math.round(moving.w * 1.5);
         const cv = CANVAS[canvasTypeRef.current];
 
-        let nx = d.ox + e.clientX - d.mx;
-        let ny = d.oy + e.clientY - d.my;
+        let nx = d.ox + (clientX - d.mx) / s;
+        let ny = d.oy + (clientY - d.my) / s;
         const snapXs: number[] = [];
         const snapYs: number[] = [];
 
@@ -308,7 +325,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       } else if (d.type === "photo-resize") {
         const prev = photosRef.current;
         const cv   = CANVAS[canvasTypeRef.current];
-        const dx   = e.clientX - d.mx;
+        const dx   = (clientX - d.mx) / s;
         const oh   = Math.round(d.ow * 1.5);
 
         // Compute raw newW and position based on corner
@@ -389,8 +406,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       } else if (d.type === "text-move") {
         const cv   = CANVAS[canvasTypeRef.current];
         const prev = photosRef.current;
-        let nx = d.ox + e.clientX - d.mx;
-        let ny = d.oy + e.clientY - d.my;
+        let nx = d.ox + (clientX - d.mx) / s;
+        let ny = d.oy + (clientY - d.my) / s;
         const snapXs: number[] = [];
         const snapYs: number[] = [];
         const tSize = textSizesRef.current[d.id] ?? { w: 0, h: 0 };
@@ -436,14 +453,22 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     const onUp = () => { dragRef.current = null; setSnapLines({ xs: [], ys: [] }); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+    };
   }, []); // intentionally empty — all mutable state accessed via refs
 
-  /* Canvas-level mousedown: detect resize corner vs photo body */
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
+  /* Canvas-level mousedown/touchstart: detect resize corner vs photo body */
+  const handleCanvasPointerDown = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    const { clientX, clientY } = getClientPos(e);
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const cx = (clientX - rect.left) / scale;
+    const cy = (clientY - rect.top) / scale;
 
     // Resize corner of selected photo? (all 4 corners)
     if (selectedId !== null) {
@@ -458,7 +483,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         ];
         for (const { corner, x: cx2, y: cy2 } of corners) {
           if (Math.abs(cx - cx2) <= RESIZE_ZONE && Math.abs(cy - cy2) <= RESIZE_ZONE) {
-            dragRef.current = { type: "photo-resize", id: selectedId, mx: e.clientX, my: e.clientY, ow: sel.w, ox: sel.x, oy: sel.y, corner };
+            dragRef.current = { type: "photo-resize", id: selectedId, mx: clientX, my: clientY, ow: sel.w, ox: sel.x, oy: sel.y, corner };
             return;
           }
         }
@@ -470,7 +495,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       const ph = Math.round(p.w * 1.5);
       if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + ph) {
         setSelectedId(p.id);
-        dragRef.current = { type: "photo-move", id: p.id, mx: e.clientX, my: e.clientY, ox: p.x, oy: p.y };
+        dragRef.current = { type: "photo-move", id: p.id, mx: clientX, my: clientY, ox: p.x, oy: p.y };
         return;
       }
     }
@@ -488,10 +513,12 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const contactBlock  = textBlocks.find(b => b.tag === "contact");
 
   return (
+    <div style={{ width: w * scale, height: h * scale, flexShrink: 0 }}>
     <div
       ref={canvasRef}
-      onMouseDown={handleCanvasMouseDown}
-      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible" }}
+      onMouseDown={handleCanvasPointerDown}
+      onTouchStart={(e) => { e.preventDefault(); handleCanvasPointerDown(e); }}
+      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible", transformOrigin: "top left", transform: `scale(${scale})`, touchAction: "none" }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
@@ -524,21 +551,21 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
       {/* Text: English Name */}
       {nameField && nameBlock && (
-        <TextElement block={nameBlock} onSize={handleTextSize} onMoveStart={(e) => { dragRef.current = { type: "text-move", id: "name", mx: e.clientX, my: e.clientY, ox: nameBlock.x, oy: nameBlock.y }; }}>
+        <TextElement block={nameBlock} onSize={handleTextSize} onMoveStart={(pos) => { dragRef.current = { type: "text-move", id: "name", mx: pos.clientX, my: pos.clientY, ox: nameBlock.x, oy: nameBlock.y }; }}>
           <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontStyle: "italic", fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>{nameField.value}</span>
         </TextElement>
       )}
 
       {/* Text: Korean Name */}
       {korNameField && korNameBlock && (
-        <TextElement block={korNameBlock} onSize={handleTextSize} onMoveStart={(e) => { dragRef.current = { type: "text-move", id: "korName", mx: e.clientX, my: e.clientY, ox: korNameBlock.x, oy: korNameBlock.y }; }}>
+        <TextElement block={korNameBlock} onSize={handleTextSize} onMoveStart={(pos) => { dragRef.current = { type: "text-move", id: "korName", mx: pos.clientX, my: pos.clientY, ox: korNameBlock.x, oy: korNameBlock.y }; }}>
           <span style={{ fontSize: korNameBlock.fontSize, fontWeight, color: txtColor, display: "block", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>{korNameField.value}</span>
         </TextElement>
       )}
 
       {/* Text: Stats */}
       {statsFields.length > 0 && statsBlock && (
-        <TextElement block={statsBlock} onSize={handleTextSize} onMoveStart={(e) => { dragRef.current = { type: "text-move", id: "stats", mx: e.clientX, my: e.clientY, ox: statsBlock.x, oy: statsBlock.y }; }}>
+        <TextElement block={statsBlock} onSize={handleTextSize} onMoveStart={(pos) => { dragRef.current = { type: "text-move", id: "stats", mx: pos.clientX, my: pos.clientY, ox: statsBlock.x, oy: statsBlock.y }; }}>
           {statsLayout === "1단" ? (
             <div style={{ display: "flex", gap: "12px", flexWrap: "nowrap" }}>
               {statsFields.map((d, i) => (
@@ -572,7 +599,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
       {/* Text: Contact */}
       {contactFields.length > 0 && contactBlock && (
-        <TextElement block={contactBlock} onSize={handleTextSize} onMoveStart={(e) => { dragRef.current = { type: "text-move", id: "contact", mx: e.clientX, my: e.clientY, ox: contactBlock.x, oy: contactBlock.y }; }}>
+        <TextElement block={contactBlock} onSize={handleTextSize} onMoveStart={(pos) => { dragRef.current = { type: "text-move", id: "contact", mx: pos.clientX, my: pos.clientY, ox: contactBlock.x, oy: contactBlock.y }; }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
             {contactFields.map((d, i) => {
               const lbl = d.label === "Instagram" ? "Instagram" : d.label === "Email" ? "E-mail" : "Tel";
@@ -586,6 +613,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
           </div>
         </TextElement>
       )}
+    </div>
     </div>
   );
 }
@@ -786,7 +814,10 @@ function ComcardPageInner() {
   const nextIdRef       = useRef(3);
   const lastResizedWRef = useRef<number | null>(null);
   const canvasRef       = useRef<HTMLDivElement>(null);
+  const mainAreaRef     = useRef<HTMLDivElement>(null);
   const editIdRef       = useRef<string | null>(editId); // 저장 시 update vs insert 판단용
+  const [canvasScale,   setCanvasScale]  = useState(1);
+  const [controlsOpen,  setControlsOpen] = useState(false);
 
   // 기존 카드 불러오기
   useEffect(() => {
@@ -883,7 +914,19 @@ function ComcardPageInner() {
     setTextBlocks(getDefaultTextBlocks(type));
   };
 
-  const { w } = CANVAS[canvas];
+  const { w, h } = CANVAS[canvas];
+
+  // 모바일에서 캔버스를 화면에 맞게 축소
+  useEffect(() => {
+    const update = () => {
+      if (!mainAreaRef.current) return;
+      const available = mainAreaRef.current.clientWidth - 48;
+      setCanvasScale(Math.min(1, available / w));
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [w]);
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -946,8 +989,9 @@ function ComcardPageInner() {
 
         {/* ── Step: Design ── */}
         {step === "design" && (
-          <div style={{ display: "flex", minHeight: "calc(100vh - 80px)" }}>
-            <aside style={{ width: "220px", flexShrink: 0, padding: "24px 18px", borderRight: "1px solid var(--border)", overflowY: "auto" }}>
+          <div className="comcard-design-layout">
+            {/* 데스크탑: 좌측 사이드바 / 모바일: 하단 드로어 */}
+            <aside className="comcard-sidebar">
               <div style={{ marginBottom: "20px", paddingBottom: "16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button onClick={() => setStep("fields")} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", background: "none", color: "var(--muted)", cursor: "pointer" }}>← Back</button>
                 <span style={{ fontSize: "11px", color: "var(--muted)" }}>{CANVAS[canvas].label}</span>
@@ -963,7 +1007,29 @@ function ComcardPageInner() {
                 statsLayout={statsLayout} setStatsLayout={setStatsLayout}
               />
             </aside>
-            <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", background: "#EBEBEB" }}>
+              {/* 모바일 전용 컨트롤 토글 */}
+              <div className="comcard-mobile-toggle">
+                <button onClick={() => setStep("fields")} style={{ fontSize: "11px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: "#fff", padding: "8px 14px", cursor: "pointer", color: "var(--muted)" }}>← Back</button>
+                <button onClick={() => setControlsOpen(o => !o)} style={{ fontSize: "11px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: controlsOpen ? "var(--text)" : "#fff", color: controlsOpen ? "#fff" : "var(--text)", padding: "8px 18px", cursor: "pointer" }}>
+                  {controlsOpen ? "닫기" : "편집 ▸"}
+                </button>
+              </div>
+              {/* 모바일 컨트롤 패널 */}
+              {controlsOpen && (
+                <div className="comcard-mobile-controls">
+                  <ControlsPanel
+                    canvas={canvas}
+                    bgColor={bgColor}   setBgColor={setBgColor}
+                    txtColor={txtColor} setTxtColor={setTxtColor}
+                    fontWeight={fontWeight} setFontWeight={setFontWeight}
+                    photos={photos}     setPhotos={setPhotos}
+                    onAddPhoto={addPhoto} onRemovePhoto={removePhoto}
+                    textBlocks={textBlocks} setTextBlocks={setTextBlocks}
+                    statsLayout={statsLayout} setStatsLayout={setStatsLayout}
+                  />
+                </div>
+              )}
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
@@ -971,13 +1037,14 @@ function ComcardPageInner() {
                 selectedFields={selectedData} statsLayout={statsLayout}
                 onPhotoResize={(w) => { lastResizedWRef.current = w; }}
                 canvasRef={canvasRef}
+                scale={canvasScale}
               />
-              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w }}>
-                <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
+              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale, flexWrap: "wrap" }}>
+                <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, minWidth: "120px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
                   {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
                 </button>
-                <button onClick={saveImage} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
-                <button onClick={downloadPDF} style={{ flex: 1, background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
+                <button onClick={saveImage} style={{ flex: 1, minWidth: "100px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
+                <button onClick={downloadPDF} style={{ flex: 1, minWidth: "120px", background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
               </div>
             </main>
           </div>

@@ -92,7 +92,7 @@ export default async function Home() {
                 return (
                   <Link key={model.id} href={`/model/${model.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                     <div style={{ cursor: "pointer" }}>
-                      <div style={{ height: "420px", overflow: "hidden", background: "var(--surface)" }}>
+                      <div style={{ aspectRatio: "2/3", overflow: "hidden", background: "var(--surface)" }}>
                         {model.photo_url
                           ? <img src={model.photo_url} alt={model.eng_name ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -174,7 +174,7 @@ export default function GalleryPage() {
             {filtered.map(model => (
               <Link key={model.id} href={`/model/${model.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{ cursor: "pointer" }}>
-                  <div style={{ height: "340px", overflow: "hidden" }}>
+                  <div style={{ aspectRatio: "2/3", overflow: "hidden" }}>
                     <img src={model.photo} alt={model.engName}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.4s" }}
                       onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
