@@ -60,6 +60,7 @@ function RangeFilter({ label, unit, value, onChange, min, max }: {
 }
 
 export default function GalleryPage() {
+  const [filterOpen, setFilterOpen] = useState(false);
   const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
   const [birthYearRange, setBirthYearRange] = useState<[number, number]>([1970, 2008]);
   const [heightRange, setHeightRange] = useState<[number, number]>([155, 195]);
@@ -101,14 +102,10 @@ export default function GalleryPage() {
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <Nav />
-      <div style={{ paddingTop: "80px", display: "flex" }}>
+      <div style={{ paddingTop: "80px" }} className="gallery-layout">
 
         {/* Filter sidebar */}
-        <aside style={{
-          width: "280px", flexShrink: 0, padding: "36px 28px",
-          borderRight: "1px solid var(--border)", position: "sticky",
-          top: "80px", height: "calc(100vh - 80px)", overflowY: "auto",
-        }}>
+        <aside className={`gallery-sidebar${filterOpen ? " open" : ""}`}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "32px" }}>
             <h2 className="font-display" style={{ fontSize: "22px", fontStyle: "italic", fontWeight: 500 }}>Filter</h2>
             <button onClick={resetAll} style={{
@@ -158,17 +155,22 @@ export default function GalleryPage() {
         </aside>
 
         {/* Model grid */}
-        <main style={{ flex: 1, padding: "40px 48px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "36px" }}>
+        <main className="gallery-main">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "36px", flexWrap: "wrap", gap: "12px" }}>
             <h1 className="font-display" style={{ fontSize: "36px", fontStyle: "italic", fontWeight: 400 }}>
               Browse Models
             </h1>
-            <span style={{ fontSize: "12px", color: "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              {filtered.length} models
-            </span>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button className="gallery-filter-toggle" onClick={() => setFilterOpen(o => !o)}>
+                ☰ {filterOpen ? "필터 닫기" : "필터"}
+              </button>
+              <span style={{ fontSize: "12px", color: "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                {filtered.length} models
+              </span>
+            </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px" }}>
+          <div className="gallery-grid">
             {filtered.map(model => (
               <Link key={model.id} href={`/model/${model.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{ cursor: "pointer" }}>

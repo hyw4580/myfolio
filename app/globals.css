@@ -173,3 +173,52 @@ button:focus {
     columns: 2;
   }
 }
+
+/* ── 홈페이지 반응형 ── */
+.home-section-pad { padding: 100px 56px; }
+.home-gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.home-features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-left: 1px solid var(--border); }
+.home-cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 120px; align-items: center; }
+.home-footer { display: flex; justify-content: space-between; align-items: center; padding: 32px 56px; }
+.home-footer-links { display: flex; gap: 36px; }
+
+@media (max-width: 768px) {
+  .home-section-pad { padding: 56px 20px; }
+  .home-gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  .home-features-grid { grid-template-columns: 1fr; border-left: none; }
+  .home-cta-grid { grid-template-columns: 1fr; gap: 40px; }
+  .home-cta-img { display: none; }
+  .home-footer { flex-direction: column; gap: 20px; padding: 32px 20px; text-align: center; }
+  .home-footer-links { gap: 20px; flex-wrap: wrap; justify-content: center; }
+}
+
+/* ── 갤러리 반응형 ── */
+.gallery-layout { display: flex; }
+.gallery-sidebar {
+  width: 280px; flex-shrink: 0; padding: 36px 28px;
+  border-right: 1px solid var(--border);
+  position: sticky; top: 80px; height: calc(100vh - 80px); overflow-y: auto;
+}
+.gallery-main { flex: 1; padding: 40px 48px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.gallery-filter-toggle { display: none; }
+
+@media (max-width: 768px) {
+  .gallery-layout { flex-direction: column; }
+  .gallery-sidebar {
+    width: 100%; position: static; height: auto;
+    border-right: none; border-bottom: 1px solid var(--border);
+    padding: 20px;
+    display: none;
+  }
+  .gallery-sidebar.open { display: block; }
+  .gallery-main { padding: 24px 20px; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  .gallery-filter-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    border: 1px solid var(--border); background: #fff;
+    padding: 10px 16px; cursor: pointer; color: var(--text);
+    margin-bottom: 20px;
+  }
+}

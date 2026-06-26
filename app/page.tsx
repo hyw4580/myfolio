@@ -68,9 +68,9 @@ export default async function Home() {
       </section>
 
       {/* Gallery Preview */}
-      <section id="gallery" style={{ padding: "100px 56px" }}>
+      <section id="gallery" className="home-section-pad">
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px", flexWrap: "wrap", gap: "16px" }}>
             <div>
               <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "12px" }}>Gallery</p>
               <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1 }}>
@@ -86,7 +86,7 @@ export default async function Home() {
           </div>
 
           {displayModels ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px" }}>
+            <div className="home-gallery-grid">
               {displayModels.map((model) => {
                 const sizes = [model.chest, model.waist, model.hip].filter(Boolean).join(" / ");
                 return (
@@ -128,7 +128,7 @@ export default async function Home() {
       </section>
 
       {/* Features */}
-      <section id="features" style={{ padding: "100px 56px", background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+      <section id="features" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "72px" }}>
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "12px" }}>Features</p>
@@ -137,7 +137,7 @@ export default async function Home() {
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0", borderLeft: "1px solid var(--border)" }}>
+          <div className="home-features-grid">
             {[
               {
                 num: "01", title: "Comp Card", link: "/comcard",
@@ -171,9 +171,10 @@ export default async function Home() {
       </section>
 
       {/* Become a Model */}
-      <section style={{ padding: "120px 56px" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "120px", alignItems: "center" }}>
-          <div style={{ height: "560px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <section className="home-section-pad">
+        <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+        <div className="home-cta-grid">
+          <div className="home-cta-img" style={{ height: "560px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: "64px", color: "var(--border)" }}>◈</span>
           </div>
           <div>
@@ -207,10 +208,11 @@ export default async function Home() {
             </Link>
           </div>
         </div>
+        </div>
       </section>
 
       {/* Contact */}
-      <section id="contact" style={{ padding: "100px 56px", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+      <section id="contact" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
           <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", marginBottom: "20px", lineHeight: 1.1 }}>
@@ -219,7 +221,7 @@ export default async function Home() {
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.8, marginBottom: "52px" }}>
             서비스 이용, 파트너십, 기타 문의사항은 아래로 연락해주세요.
           </p>
-          <div style={{ display: "flex", gap: "0", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "0", justifyContent: "center", flexWrap: "wrap" }}>
             <a href="mailto:hello@myfolio.com" style={{
               padding: "16px 36px", textDecoration: "none", color: "var(--text)",
               fontSize: "12px", letterSpacing: "0.12em", textTransform: "uppercase",
@@ -230,7 +232,7 @@ export default async function Home() {
             <a href="#" style={{
               padding: "16px 36px", textDecoration: "none", color: "var(--text)",
               fontSize: "12px", letterSpacing: "0.12em", textTransform: "uppercase",
-              border: "1px solid var(--border)", borderLeft: "none", background: "#fff",
+              border: "1px solid var(--border)", background: "#fff",
             }}>
               Instagram
             </a>
@@ -239,12 +241,9 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer style={{
-        borderTop: "1px solid var(--border)", padding: "32px 56px",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
+      <footer className="home-footer" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="font-display" style={{ fontSize: "18px", fontWeight: 400, fontStyle: "italic" }}>myfolio</span>
-        <div style={{ display: "flex", gap: "36px" }}>
+        <div className="home-footer-links">
           <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>이용약관</a>
           <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>개인정보처리방침</a>
           <a href="#contact" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>문의</a>
