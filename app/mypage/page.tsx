@@ -219,11 +219,60 @@ export default function MyPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            {/* 영문/한글 이름 */}
             {[
-              { label: "영문 이름",        field: "eng_name",   placeholder: "Emma Johnson",   type: "text"   },
-              { label: "한글 이름",        field: "kor_name",   placeholder: "엠마 존슨",        type: "text"   },
-              { label: "성별",            field: "gender",     placeholder: "Female",          type: "text"   },
-              { label: "출생연도",         field: "birth_year", placeholder: "2001",            type: "number" },
+              { label: "영문 이름", field: "eng_name", placeholder: "Emma Johnson",   type: "text" },
+              { label: "한글 이름", field: "kor_name", placeholder: "엠마 존슨",        type: "text" },
+            ].map(({ label, field, placeholder, type }) => (
+              <div key={field}>
+                <label style={labelStyle}>{label}</label>
+                <input
+                  style={inputStyle} type={type} placeholder={placeholder}
+                  value={(profile[field as keyof Profile] as string) ?? ""}
+                  onChange={e => update(field as keyof Profile, e.target.value)}
+                />
+              </div>
+            ))}
+
+            {/* 성별 — 셀렉트 */}
+            <div>
+              <label style={labelStyle}>성별</label>
+              <select
+                style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
+                value={profile.gender ?? ""}
+                onChange={e => update("gender", e.target.value)}
+              >
+                <option value="">— Select —</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Non-binary">Non-binary</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+
+            {/* 출생연도 — 스크롤 셀렉트 */}
+            {(() => {
+              const currentYear = new Date().getFullYear();
+              const defaultYear = currentYear - 20;
+              const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+              return (
+                <div>
+                  <label style={labelStyle}>출생연도</label>
+                  <select
+                    style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
+                    value={profile.birth_year ?? defaultYear}
+                    onChange={e => update("birth_year", Number(e.target.value))}
+                  >
+                    {years.map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })()}
+
+            {/* 나머지 필드 */}
+            {[
               { label: "키 (cm)",         field: "height",     placeholder: "170",             type: "number" },
               { label: "몸무게 (kg)",      field: "weight",     placeholder: "52",              type: "number" },
               { label: "가슴 (in)",       field: "chest",      placeholder: "34",              type: "number" },

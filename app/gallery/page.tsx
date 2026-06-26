@@ -61,7 +61,7 @@ function RangeFilter({ label, unit, value, onChange, min, max }: {
 
 export default function GalleryPage() {
   const [filterOpen, setFilterOpen] = useState(false);
-  const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
+  const [gender, setGender] = useState<"All" | "Female" | "Male" | "Non-binary" | "Prefer not to say">("All");
   const [birthYearRange, setBirthYearRange] = useState<[number, number]>([1970, 2008]);
   const [heightRange, setHeightRange] = useState<[number, number]>([155, 195]);
   const [weightRange, setWeightRange] = useState<[number, number]>([40, 90]);
@@ -87,7 +87,7 @@ export default function GalleryPage() {
   });
 
   const resetAll = () => {
-    setGender("All");
+    setGender("All" as const);
     setBirthYearRange([1970, 2008]);
     setHeightRange([155, 195]);
     setWeightRange([40, 90]);
@@ -117,16 +117,22 @@ export default function GalleryPage() {
           {/* Gender */}
           <div style={sectionStyle}>
             <p style={labelStyle}>Gender</p>
-            <div style={{ display: "flex", gap: "0" }}>
-              {(["All", "Female", "Male"] as const).map((g, i) => (
-                <button key={g} onClick={() => setGender(g)} style={{
-                  flex: 1, padding: "8px 0", fontSize: "11px", cursor: "pointer",
+            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {([
+                { value: "All",              label: "All" },
+                { value: "Female",           label: "Female" },
+                { value: "Male",             label: "Male" },
+                { value: "Non-binary",       label: "Non-binary" },
+                { value: "Prefer not to say",label: "Prefer not to say" },
+              ] as const).map(({ value, label }, i) => (
+                <button key={value} onClick={() => setGender(value)} style={{
+                  padding: "8px 12px", fontSize: "11px", cursor: "pointer", textAlign: "left",
                   border: "1px solid var(--border)",
-                  borderLeft: i === 0 ? "1px solid var(--border)" : "none",
-                  background: gender === g ? "var(--text)" : "#fff",
-                  color: gender === g ? "#fff" : "var(--muted)",
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                }}>{g}</button>
+                  borderTop: i === 0 ? "1px solid var(--border)" : "none",
+                  background: gender === value ? "var(--text)" : "#fff",
+                  color: gender === value ? "#fff" : "var(--muted)",
+                  letterSpacing: "0.08em",
+                }}>{label}</button>
               ))}
             </div>
           </div>
@@ -174,7 +180,7 @@ export default function GalleryPage() {
             {filtered.map(model => (
               <Link key={model.id} href={`/model/${model.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{ cursor: "pointer" }}>
-                  <div style={{ aspectRatio: "2/3", overflow: "hidden" }}>
+                  <div style={{ aspectRatio: "3/4", overflow: "hidden" }}>
                     <img src={model.photo} alt={model.engName}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.4s" }}
                       onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}

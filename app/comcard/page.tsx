@@ -73,7 +73,7 @@ function computePhotoGrid(canvas: CanvasType, count: number, mainW: number): Pho
   if (canvas === "portrait") {
     const cols   = count <= 4 ? 2 : 3;
     const rows   = Math.ceil(count / cols);
-    const photoH = Math.round(mainW * 1.5);
+    const photoH = Math.round(mainW * (4/3));
     const totalW = cols * mainW + (cols - 1) * gap;
     const totalH = rows * photoH + (rows - 1) * gap;
     const sx = Math.max(0, Math.floor((w - totalW) / 2));
@@ -86,7 +86,7 @@ function computePhotoGrid(canvas: CanvasType, count: number, mainW: number): Pho
     }));
   } else {
     // landscape: big photo left + smaller grid right
-    const mainH  = Math.round(mainW * 1.5);
+    const mainH  = Math.round(mainW * (4/3));
     const rest   = count - 1;
     if (rest === 0) return [{ id: 0, src: null, x: Math.floor((w - mainW) / 2), y: Math.floor((h - mainH) / 2), w: mainW }];
     const rCols  = rest <= 2 ? 1 : 2;
@@ -95,9 +95,9 @@ function computePhotoGrid(canvas: CanvasType, count: number, mainW: number): Pho
     const availW = w - rx - gap * (rCols + 1);
     const rW     = Math.min(
       Math.floor(availW / rCols),
-      Math.floor((h - gap * (rRows + 1)) / (rRows * 1.5)),
+      Math.floor((h - gap * (rRows + 1)) / (rRows * (4/3))),
     );
-    const rH      = Math.round(rW * 1.5);
+    const rH      = Math.round(rW * (4/3));
     const rTotal  = rRows * rH + (rRows - 1) * gap;
     const rStartY = Math.max(gap, Math.floor((h - rTotal) / 2));
     const mainY   = Math.max(gap, Math.floor((h - mainH) / 2));
@@ -120,7 +120,7 @@ function getDefaultPhotos(canvas: CanvasType, count: number): PhotoItem[] {
     const rows = Math.ceil(count / cols);
     mainW = Math.min(
       Math.floor((w - gap * (cols - 1)) / cols),
-      Math.floor((h - gap * (rows - 1)) / (rows * 1.5)),
+      Math.floor((h - gap * (rows - 1)) / (rows * (4/3))),
     );
   } else {
     // Landscape: pick mainW = 35% of canvas width (computePhotoGrid will fit the right column)
@@ -141,7 +141,7 @@ function getDefaultTextBlocks(canvas: CanvasType): TextBlock[] {
 
 /* ─────────────── photo element (display only) ───────────────── */
 function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean }) {
-  const ph = Math.round(item.w * 1.5);
+  const ph = Math.round(item.w * (4/3));
   return (
     <div style={{
       position: "absolute", left: item.x, top: item.y, width: item.w, height: ph,
@@ -255,7 +255,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       if (curSel !== null) {
         const sel = curPhotos.find(p => p.id === curSel);
         if (sel) {
-          const ph = Math.round(sel.w * 1.5);
+          const ph = Math.round(sel.w * (4/3));
           const corners = [
             { x: sel.x, y: sel.y }, { x: sel.x + sel.w, y: sel.y },
             { x: sel.x, y: sel.y + ph }, { x: sel.x + sel.w, y: sel.y + ph },
@@ -268,7 +268,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       // 사진 영역 체크
       for (let i = curPhotos.length - 1; i >= 0; i--) {
         const p = curPhotos[i];
-        if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + Math.round(p.w * 1.5)) {
+        if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + Math.round(p.w * (4/3))) {
           e.preventDefault(); return;
         }
       }
@@ -293,7 +293,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const prev    = photosRef.current;
         const moving  = prev.find(p => p.id === d.id);
         if (!moving) return;
-        const ph = Math.round(moving.w * 1.5);
+        const ph = Math.round(moving.w * (4/3));
         const cv = CANVAS[canvasTypeRef.current];
 
         let nx = d.ox + (clientX - d.mx) / s;
@@ -314,7 +314,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         // Other photo edge snaps
         for (const other of prev) {
           if (other.id === d.id) continue;
-          const oph = Math.round(other.w * 1.5);
+          const oph = Math.round(other.w * (4/3));
           if (!snapXs.length) {
             if      (Math.abs(nx - other.x) < SNAP)                     { nx = other.x; snapXs.push(other.x); }
             else if (Math.abs(nx - (other.x + other.w)) < SNAP)         { nx = other.x + other.w; snapXs.push(other.x + other.w); }
@@ -349,12 +349,12 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
           const vGaps = new Set<number>();
           for (const a of others) for (const b of others) {
             if (a === b) continue;
-            const aH = Math.round(a.w * 1.5);
+            const aH = Math.round(a.w * (4/3));
             const g = Math.round(b.y - (a.y + aH));
             if (g > 0 && g <= 80) vGaps.add(g);
           }
           gapY: for (const other of others) {
-            const oph = Math.round(other.w * 1.5);
+            const oph = Math.round(other.w * (4/3));
             for (const g of vGaps) {
               if (Math.abs(ny - (other.y + oph + g)) < SNAP)          { ny = other.y + oph + g; snapYs.push(other.y + oph); break gapY; }
               if (Math.abs(ny + ph + g - other.y) < SNAP)             { ny = other.y - ph - g; snapYs.push(other.y); break gapY; }
@@ -369,7 +369,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const prev = photosRef.current;
         const cv   = CANVAS[canvasTypeRef.current];
         const dx   = (clientX - d.mx) / s;
-        const oh   = Math.round(d.ow * 1.5);
+        const oh   = Math.round(d.ow * (4/3));
 
         // Compute raw newW and position based on corner
         let rawW: number;
@@ -388,7 +388,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
         // Update Y for top corners (bottom edge stays fixed)
         if (d.corner === "tr" || d.corner === "tl") {
-          newY = d.oy + oh - Math.round(newW * 1.5);
+          newY = d.oy + oh - Math.round(newW * (4/3));
         }
 
         const snapXs: number[] = [];
@@ -417,20 +417,20 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         }
 
         if (isBottomCorner) {
-          const bottomEdge = newY + Math.round(newW * 1.5);
-          if (Math.abs(bottomEdge - cv.h) < RESIZE_SNAP) { newW = Math.round((cv.h - newY) / 1.5); snapYs.push(cv.h); }
+          const bottomEdge = newY + Math.round(newW * (4/3));
+          if (Math.abs(bottomEdge - cv.h) < RESIZE_SNAP) { newW = Math.round((cv.h - newY) / (4/3)); snapYs.push(cv.h); }
           else for (const o of others) {
-            const oh2 = Math.round(o.w * 1.5);
-            if (Math.abs(bottomEdge - o.y) < RESIZE_SNAP)           { newW = Math.round((o.y - newY) / 1.5); snapYs.push(o.y); break; }
-            if (Math.abs(bottomEdge - (o.y + oh2)) < RESIZE_SNAP)   { newW = Math.round((o.y + oh2 - newY) / 1.5); snapYs.push(o.y + oh2); break; }
+            const oh2 = Math.round(o.w * (4/3));
+            if (Math.abs(bottomEdge - o.y) < RESIZE_SNAP)           { newW = Math.round((o.y - newY) / (4/3)); snapYs.push(o.y); break; }
+            if (Math.abs(bottomEdge - (o.y + oh2)) < RESIZE_SNAP)   { newW = Math.round((o.y + oh2 - newY) / (4/3)); snapYs.push(o.y + oh2); break; }
           }
         } else {
           // Top corner: snap top edge (newY), bottom fixed
           const bottomFixed = d.oy + oh;
-          const snapY = (t: number) => { newY = t; newW = Math.round((bottomFixed - t) / 1.5); snapYs.push(t); };
+          const snapY = (t: number) => { newY = t; newW = Math.round((bottomFixed - t) / (4/3)); snapYs.push(t); };
           if (Math.abs(newY) < RESIZE_SNAP) snapY(0);
           else for (const o of others) {
-            const oh2 = Math.round(o.w * 1.5);
+            const oh2 = Math.round(o.w * (4/3));
             if (Math.abs(newY - o.y) < RESIZE_SNAP)           { snapY(o.y); break; }
             if (Math.abs(newY - (o.y + oh2)) < RESIZE_SNAP)   { snapY(o.y + oh2); break; }
           }
@@ -439,7 +439,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         newW = Math.max(50, newW);
         // Re-sync top-corner Y after snap may have changed newW
         if (d.corner === "tr" || d.corner === "tl") {
-          newY = d.oy + oh - Math.round(newW * 1.5);
+          newY = d.oy + oh - Math.round(newW * (4/3));
         }
 
         onPhotoResize(newW);
@@ -476,7 +476,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
         // Y snap targets: canvas edges + photo edges + other text block edges
         const yTargets = [0, cv.h, cv.h / 2];
-        for (const p of prev) { const ph = Math.round(p.w * 1.5); yTargets.push(p.y, p.y + ph); }
+        for (const p of prev) { const ph = Math.round(p.w * (4/3)); yTargets.push(p.y, p.y + ph); }
         for (const b of textBlocksRef.current) {
           if (b.id === d.id) continue;
           const bs = textSizesRef.current[b.id];
@@ -517,7 +517,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     if (selectedId !== null) {
       const sel = photos.find(p => p.id === selectedId);
       if (sel) {
-        const ph = Math.round(sel.w * 1.5);
+        const ph = Math.round(sel.w * (4/3));
         const corners: { corner: Corner; x: number; y: number }[] = [
           { corner: "tl", x: sel.x,          y: sel.y      },
           { corner: "tr", x: sel.x + sel.w,   y: sel.y      },
@@ -535,7 +535,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     // Hit-test photos (reverse = topmost first)
     for (let i = photos.length - 1; i >= 0; i--) {
       const p = photos[i];
-      const ph = Math.round(p.w * 1.5);
+      const ph = Math.round(p.w * (4/3));
       if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + ph) {
         setSelectedId(p.id);
         dragRef.current = { type: "photo-move", id: p.id, mx: clientX, my: clientY, ox: p.x, oy: p.y };
@@ -598,7 +598,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       {selectedId !== null && (() => {
         const sel = photos.find(p => p.id === selectedId);
         if (!sel) return null;
-        const ph = Math.round(sel.w * 1.5);
+        const ph = Math.round(sel.w * (4/3));
         const corners = [
           { corner: "tl", left: sel.x - RESIZE_ZONE,          top: sel.y - RESIZE_ZONE,       cursor: "nwse-resize" },
           { corner: "tr", left: sel.x + sel.w - RESIZE_ZONE,  top: sel.y - RESIZE_ZONE,       cursor: "nesw-resize" },

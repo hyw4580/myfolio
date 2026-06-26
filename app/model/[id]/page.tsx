@@ -115,7 +115,7 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
 
             {/* 메인 사진 */}
             <div>
-              <div style={{ aspectRatio: "2/3", overflow: "hidden", background: "#e8e5e0" }}>
+              <div style={{ aspectRatio: "3/4", overflow: "hidden", background: "#e8e5e0" }}>
                 <img src={displayPhoto} alt={profile.eng_name ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
             </div>
