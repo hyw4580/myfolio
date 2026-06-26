@@ -1267,15 +1267,18 @@ function ComcardPageInner() {
           <div className="comcard-design-layout">
             {/* 캔버스 영역 */}
             <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
-              <CanvasEditor
-                canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
-                photos={photos} setPhotos={setPhotos}
-                textBlocks={textBlocks} setTextBlocks={setTextBlocks}
-                selectedFields={selectedData} statsLayout={statsLayout}
-                onPhotoResize={(canvasW) => { lastResizedWRef.current = canvasW; }}
-                canvasRef={canvasRef}
-                scale={canvasScale * userZoom}
-              />
+              {/* userZoom은 레이아웃 크기에 영향 없이 시각적 transform만 적용 */}
+              <div style={{ transform: `scale(${userZoom})`, transformOrigin: "center top", flexShrink: 0 }}>
+                <CanvasEditor
+                  canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
+                  photos={photos} setPhotos={setPhotos}
+                  textBlocks={textBlocks} setTextBlocks={setTextBlocks}
+                  selectedFields={selectedData} statsLayout={statsLayout}
+                  onPhotoResize={(canvasW) => { lastResizedWRef.current = canvasW; }}
+                  canvasRef={canvasRef}
+                  scale={canvasScale}
+                />
+              </div>
             </main>
             {/* 컨트롤 사이드바 */}
             <aside className="comcard-sidebar">
