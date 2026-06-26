@@ -756,7 +756,7 @@ function hexToHsv(hex: string): [number, number, number] {
   return [h, max === 0 ? 0 : (d / max) * 100, max * 100];
 }
 
-function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChange: (c: string) => void; onClose: () => void }) {
+function ColorPickerPopup({ value, onChange, onClose, anchorRect }: { value: string; onChange: (c: string) => void; onClose: () => void; anchorRect?: DOMRect }) {
   const R = 80; // 색상환 반지름
   const [hue, setHue] = useState(() => hexToHsv(value)[0]);
   const [sat, setSat] = useState(() => hexToHsv(value)[1]);
@@ -788,9 +788,14 @@ function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChang
   // 밝기 슬라이더 배경
   const pureColor = hsvToHex(hue, sat, 100);
 
+  const sidebarW = 220;
+  const popupW = 234;
+  const fixedLeft = anchorRect ? Math.max(sidebarW + 12, anchorRect.left) : sidebarW + 12;
+  const fixedTop  = anchorRect ? Math.min(anchorRect.top, window.innerHeight - 420) : 100;
+
   return (
     <div
-      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", right: 0 }}
+      style={{ position: "fixed", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: `${popupW}px`, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", left: fixedLeft, top: fixedTop }}
       onMouseDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
@@ -847,6 +852,14 @@ function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChang
 
 function ColorRow({ label, presets, current, onChange, isCustom }: { label: string; presets: {v:string;l:string}[]; current: string; onChange: (c:string)=>void; isCustom: boolean }) {
   const [open, setOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | undefined>();
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const handleOpen = () => {
+    if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
+    setOpen(o => !o);
+  };
+
   return (
     <div>
       <p style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "8px" }}>{label}</p>
@@ -855,12 +868,12 @@ function ColorRow({ label, presets, current, onChange, isCustom }: { label: stri
           <button key={opt.v} onClick={() => { onChange(opt.v); setOpen(false); }} title={opt.l}
             style={{ width: "28px", height: "28px", background: opt.v, border: current === opt.v ? "2px solid var(--text)" : "1px solid var(--border)", cursor: "pointer", flexShrink: 0 }} />
         ))}
-        <div style={{ position: "relative" }}>
-          <button onClick={() => setOpen(o => !o)} title="Custom"
+        <div>
+          <button ref={btnRef} onClick={handleOpen} title="Custom"
             style={{ width: "28px", height: "28px", border: isCustom ? "2px solid var(--text)" : "1px solid var(--border)", background: isCustom ? current : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}>
             {!isCustom && <div style={{ width: "18px", height: "18px", borderRadius: "50%", background: "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)", pointerEvents: "none" }} />}
           </button>
-          {open && <ColorPickerPopup value={isCustom ? current : "#ff0000"} onChange={onChange} onClose={() => setOpen(false)} />}
+          {open && <ColorPickerPopup value={isCustom ? current : "#ff0000"} onChange={onChange} onClose={() => setOpen(false)} anchorRect={anchorRect} />}
         </div>
       </div>
     </div>
