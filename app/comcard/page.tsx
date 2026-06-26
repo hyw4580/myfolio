@@ -574,8 +574,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         return (
           <div className="crop-guide" style={{
             position: "absolute",
-            inset: mm2px,
-            border: "0.5px dashed rgba(180,0,0,0.45)",
+            top: mm2px, right: mm2px, bottom: mm2px, left: mm2px,
+            border: "0.5px dashed rgba(180,0,0,0.5)",
             pointerEvents: "none",
             zIndex: 100,
           }} />
