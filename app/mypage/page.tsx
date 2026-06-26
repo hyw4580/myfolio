@@ -8,6 +8,42 @@ import type { User } from "@supabase/supabase-js";
 
 type CompCard = { id: string; title: string; canvas_type: string; created_at: string; };
 
+function YearPicker({ value, onChange, inputStyle }: { value: number | null; onChange: (y: number) => void; inputStyle: React.CSSProperties }) {
+  const currentYear = new Date().getFullYear();
+  const defaultYear = currentYear - 20;
+  const selectedYear = value ?? defaultYear;
+  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const item = el.querySelector(`[data-year="${selectedYear}"]`) as HTMLElement | null;
+    if (item) item.scrollIntoView({ block: "center" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div ref={scrollRef} style={{ ...inputStyle, padding: 0, height: 160, overflowY: "scroll", cursor: "default" }}>
+      {years.map(y => (
+        <div
+          key={y}
+          data-year={y}
+          onClick={() => onChange(y)}
+          style={{
+            padding: "9px 14px", fontSize: "14px", cursor: "pointer",
+            background: y === selectedYear ? "var(--text)" : "transparent",
+            color: y === selectedYear ? "#fff" : "var(--text)",
+            userSelect: "none",
+          }}
+        >
+          {y}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type Profile = {
   id: string;
   slug: string | null;
@@ -251,48 +287,10 @@ export default function MyPage() {
             </div>
 
             {/* 출생연도 — 고정 높이 스크롤 피커 */}
-            {(() => {
-              const currentYear = new Date().getFullYear();
-              const defaultYear = currentYear - 20;
-              const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
-              const selectedYear = profile.birth_year ?? defaultYear;
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              const scrollRef = useRef<HTMLDivElement>(null);
-              // eslint-disable-next-line react-hooks/rules-of-hooks
-              useEffect(() => {
-                const el = scrollRef.current;
-                if (!el) return;
-                const item = el.querySelector(`[data-year="${selectedYear}"]`) as HTMLElement | null;
-                if (item) item.scrollIntoView({ block: "center" });
-              }, []);
-              return (
-                <div>
-                  <label style={labelStyle}>출생연도</label>
-                  <div
-                    ref={scrollRef}
-                    style={{ ...inputStyle, padding: 0, height: 160, overflowY: "scroll", cursor: "default" }}
-                  >
-                    {years.map(y => (
-                      <div
-                        key={y}
-                        data-year={y}
-                        onClick={() => update("birth_year", y)}
-                        style={{
-                          padding: "9px 14px",
-                          fontSize: "14px",
-                          cursor: "pointer",
-                          background: y === selectedYear ? "var(--text)" : "transparent",
-                          color: y === selectedYear ? "#fff" : "var(--text)",
-                          userSelect: "none",
-                        }}
-                      >
-                        {y}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
+            <div>
+              <label style={labelStyle}>출생연도</label>
+              <YearPicker value={profile.birth_year} onChange={y => update("birth_year", y)} inputStyle={inputStyle} />
+            </div>
 
             {/* 나머지 필드 */}
             {[
