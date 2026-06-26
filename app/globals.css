@@ -177,7 +177,7 @@ button:focus {
 /* ── 컴카드 에디터 반응형 ── */
 .comcard-design-layout {
   display: flex;
-  min-height: calc(100vh - 80px);
+  height: calc(100vh - 80px);
 }
 .comcard-sidebar {
   width: 220px; flex-shrink: 0;
@@ -195,9 +195,9 @@ button:focus {
     min-height: auto;
   }
   .comcard-canvas-main {
-    flex: none !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
+    flex: 1 !important;
+    height: auto !important;
+    overflow: auto !important;
     padding: 20px 16px 32px !important;
   }
   .comcard-sidebar {

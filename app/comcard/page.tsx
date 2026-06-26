@@ -556,12 +556,12 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const contactBlock  = textBlocks.find(b => b.tag === "contact");
 
   return (
-    <div style={{ width: w * scale, height: h * scale, flexShrink: 0, overflow: "hidden" }}>
+    <div style={{ width: w * scale, height: h * scale, flexShrink: 0, position: "relative" }}>
     <div
       ref={canvasRef}
       onMouseDown={handleCanvasPointerDown}
       onTouchStart={(e) => { handleCanvasPointerDown(e); }}
-      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})` }}
+      style={{ position: "absolute", top: 0, left: 0, width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})` }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
@@ -1181,7 +1181,7 @@ function ComcardPageInner() {
         {step === "design" && (
           <div className="comcard-design-layout">
             {/* 캔버스 영역 (데스크탑: flex 1 / 모바일: order 1) */}
-            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "auto", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
