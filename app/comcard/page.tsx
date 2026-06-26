@@ -150,7 +150,7 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
-        ? <img src={item.src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+        ? <img src={item.src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", pointerEvents: "none" }} />
         : <div style={{ width: "100%", height: "100%", background: isDark ? "#2A2A2A" : "#D8D4CF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", pointerEvents: "none" }}>
             <span style={{ fontSize: "20px", color: isDark ? "#555" : "#B0ACA8" }}>+</span>
             <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: isDark ? "#555" : "#A8A49F" }}>{isMain ? "Main" : `Photo`}</span>
