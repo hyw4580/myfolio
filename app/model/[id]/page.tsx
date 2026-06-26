@@ -102,7 +102,7 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
   const hasCompCard = compCards && compCards.length > 0;
   const hasVideo    = profile.video_urls && profile.video_urls.length > 0;
 
-  const font = "var(--font-inter, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif)";
+  const font = "var(--font-inter), var(--font-korean), sans-serif";
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", color: "#111", fontFamily: font }}>

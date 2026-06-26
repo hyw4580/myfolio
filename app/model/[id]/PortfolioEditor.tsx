@@ -34,7 +34,7 @@ type Props = {
   initialVisibleSpecs: string[] | null;
 };
 
-const font = "var(--font-inter, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif)";
+const font = "var(--font-inter), var(--font-korean), sans-serif";
 
 export default function PortfolioEditor({ userId, initialGallery, initialSnaps, initialKakao, initialInstagram, initialTel, initialVideos, initialCompCards, initialCareer, initialVisibleSpecs }: Props) {
   const supabase = createClient();

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import CompCardCanvas from "./CompCardCanvas";
 
-const font = "var(--font-inter, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif)";
+const font = "var(--font-inter), var(--font-korean), sans-serif";
 
 type Item = { id: string; url: string };
 type CompCard = {

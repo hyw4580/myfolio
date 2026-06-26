@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const font = "var(--font-inter, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif)";
+const font = "var(--font-inter), var(--font-korean), sans-serif";
 
 const pill: React.CSSProperties = {
   display: "inline-block", padding: "8px 16px", borderRadius: "999px",
