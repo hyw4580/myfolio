@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Nav from "../components/Nav";
@@ -790,12 +791,12 @@ function ColorPickerPopup({ value, onChange, onClose, anchorRect }: { value: str
 
   const sidebarW = 220;
   const popupW = 234;
-  const fixedLeft = anchorRect ? Math.max(sidebarW + 12, anchorRect.left) : sidebarW + 12;
+  const fixedLeft = anchorRect ? Math.max(sidebarW + 12, anchorRect.right + 8) : sidebarW + 12;
   const fixedTop  = anchorRect ? Math.min(anchorRect.top, window.innerHeight - 420) : 100;
 
-  return (
+  const popup = (
     <div
-      style={{ position: "fixed", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: `${popupW}px`, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", left: fixedLeft, top: fixedTop }}
+      style={{ position: "fixed", zIndex: 9999, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: `${popupW}px`, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", left: fixedLeft, top: fixedTop }}
       onMouseDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
@@ -848,6 +849,7 @@ function ColorPickerPopup({ value, onChange, onClose, anchorRect }: { value: str
       </div>
     </div>
   );
+  return createPortal(popup, document.body);
 }
 
 function ColorRow({ label, presets, current, onChange, isCustom }: { label: string; presets: {v:string;l:string}[]; current: string; onChange: (c:string)=>void; isCustom: boolean }) {
