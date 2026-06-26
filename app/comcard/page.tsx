@@ -815,10 +815,9 @@ function ColorPickerPopup({ value, onChange, onClose, anchorRect }: { value: str
   // 밝기 슬라이더 배경
   const pureColor = hsvToHex(hue, sat, 100);
 
-  const sidebarW = 220;
   const popupW = 234;
-  const fixedLeft = anchorRect ? Math.max(sidebarW + 12, anchorRect.right + 8) : sidebarW + 12;
-  const fixedTop  = anchorRect ? Math.min(anchorRect.top, window.innerHeight - 420) : 100;
+  const fixedLeft = typeof window !== "undefined" ? Math.round((window.innerWidth - popupW) / 2) : 100;
+  const fixedTop  = anchorRect ? Math.min(anchorRect.bottom + 8, window.innerHeight - 430) : 100;
 
   const popup = (
     <div
