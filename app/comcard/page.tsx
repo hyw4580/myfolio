@@ -1043,6 +1043,8 @@ function ComcardPageInner() {
   const [canvasScale,   setCanvasScale]  = useState(1);
   const [controlsOpen,  setControlsOpen] = useState(false);
   const [userZoom,      setUserZoom]     = useState(1);
+  const pinchRef    = useRef<{ dist: number; zoom: number } | null>(null);
+  const userZoomRef = useRef(1);
 
   // 기존 카드 불러오기
   useEffect(() => {
@@ -1160,11 +1162,47 @@ function ComcardPageInner() {
       const available = el.clientWidth - padding;
       setCanvasScale(Math.min(1, available / w));
     };
-    // ref가 DOM에 붙은 후 실행되도록 setTimeout 0
     const t = setTimeout(update, 0);
     window.addEventListener("resize", update);
     return () => { clearTimeout(t); window.removeEventListener("resize", update); };
   }, [w, step]);
+
+  // 회색 캔버스 영역 핀치 줌
+  useEffect(() => {
+    if (step !== "design") return;
+    const el = mainAreaRef.current;
+    if (!el) return;
+
+    const getDist = (t: TouchList) => {
+      const dx = t[0].clientX - t[1].clientX;
+      const dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { dist: getDist(e.touches), zoom: userZoomRef.current };
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) return;
+      e.preventDefault();
+      const ratio = getDist(e.touches) / pinchRef.current.dist;
+      const next = Math.min(2.0, Math.max(0.4, pinchRef.current.zoom * ratio));
+      userZoomRef.current = next;
+      setUserZoom(Math.round(next * 20) / 20);
+    };
+    const onEnd = () => { pinchRef.current = null; };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd);
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, [step]);
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -1230,12 +1268,6 @@ function ComcardPageInner() {
           <div className="comcard-design-layout">
             {/* 캔버스 영역 */}
             <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
-              {/* 줌 버튼 */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", alignSelf: "flex-end" }}>
-                <button onClick={() => setUserZoom(z => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))} style={{ width: "28px", height: "28px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>−</button>
-                <span style={{ fontSize: "11px", color: "var(--muted)", minWidth: "36px", textAlign: "center" }}>{Math.round(userZoom * 100)}%</span>
-                <button onClick={() => setUserZoom(z => Math.min(2.0, Math.round((z + 0.1) * 10) / 10))} style={{ width: "28px", height: "28px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>+</button>
-              </div>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
