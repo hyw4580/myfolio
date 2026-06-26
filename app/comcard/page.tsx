@@ -1042,6 +1042,7 @@ function ComcardPageInner() {
   const editIdRef       = useRef<string | null>(editId); // 저장 시 update vs insert 판단용
   const [canvasScale,   setCanvasScale]  = useState(1);
   const [controlsOpen,  setControlsOpen] = useState(false);
+  const [mobileTab,     setMobileTab]    = useState<"canvas" | "controls">("canvas");
 
   // 기존 카드 불러오기
   useEffect(() => {
@@ -1226,8 +1227,13 @@ function ComcardPageInner() {
 
         {/* ── Step: Design ── */}
         {step === "design" && (
-          <div className="comcard-design-layout">
-            {/* 캔버스 영역 (데스크탑: flex 1 / 모바일: order 1) */}
+          <div className={`comcard-design-layout comcard-tab-${mobileTab}`}>
+            {/* 모바일 탭바 */}
+            <div className="comcard-mobile-tabs">
+              <button className={mobileTab === "canvas" ? "active" : ""} onClick={() => setMobileTab("canvas")}>Canvas</button>
+              <button className={mobileTab === "controls" ? "active" : ""} onClick={() => setMobileTab("controls")}>Controls</button>
+            </div>
+            {/* 캔버스 영역 */}
             <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}

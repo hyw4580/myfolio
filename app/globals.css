@@ -188,27 +188,66 @@ button:focus {
 }
 .comcard-mobile-toggle { display: none; }
 .comcard-mobile-controls { display: none; }
+.comcard-mobile-tabs { display: none; }
 
 @media (max-width: 768px) {
   .comcard-design-layout {
     flex-direction: column;
-    min-height: auto;
+    height: calc(100vh - 80px);
   }
-  .comcard-canvas-main {
+
+  /* 모바일 탭바 */
+  .comcard-mobile-tabs {
+    display: flex;
+    flex-shrink: 0;
+    height: 44px;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+    order: -1;
+  }
+  .comcard-mobile-tabs button {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .comcard-mobile-tabs button.active {
+    color: var(--text);
+    border-bottom: 2px solid var(--text);
+  }
+
+  /* Canvas 탭 활성 */
+  .comcard-tab-canvas .comcard-canvas-main {
     flex: 1 !important;
-    height: auto !important;
-    overflow: auto !important;
+    display: flex !important;
     padding: 20px 16px 32px !important;
+    overflow: auto !important;
+    height: auto !important;
   }
-  .comcard-sidebar {
-    width: 100%; border-right: none;
-    border-top: 1px solid var(--border);
-    padding: 24px 20px 60px;
-    order: 2;
-    overflow-y: visible;
+  .comcard-tab-canvas .comcard-sidebar {
+    display: none !important;
   }
-  .comcard-mobile-toggle { display: none; }
-  .comcard-mobile-controls { display: none; }
+
+  /* Controls 탭 활성 */
+  .comcard-tab-controls .comcard-canvas-main {
+    display: none !important;
+  }
+  .comcard-tab-controls .comcard-sidebar {
+    display: block !important;
+    flex: 1 !important;
+    width: 100% !important;
+    border-right: none !important;
+    border-top: none !important;
+    overflow-y: auto !important;
+    padding: 20px 20px 60px !important;
+    order: 1;
+  }
 }
 
 /* ── 홈페이지 반응형 ── */
