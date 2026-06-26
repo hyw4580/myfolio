@@ -513,12 +513,12 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const contactBlock  = textBlocks.find(b => b.tag === "contact");
 
   return (
-    <div style={{ width: w * scale, height: h * scale, flexShrink: 0 }}>
+    <div style={{ width: w * scale, height: h * scale, flexShrink: 0, overflow: "hidden" }}>
     <div
       ref={canvasRef}
       onMouseDown={handleCanvasPointerDown}
       onTouchStart={(e) => { e.preventDefault(); handleCanvasPointerDown(e); }}
-      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible", transformOrigin: "top left", transform: `scale(${scale})`, touchAction: "none" }}
+      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})`, touchAction: "none" }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
@@ -679,6 +679,117 @@ function PhotoPanel({ photos, setPhotos, onAdd, onRemove }: {
   );
 }
 
+/* ─────────────────── custom color picker ───────────────────── */
+function hsvToHex(h: number, s: number, v: number): string {
+  s /= 100; v /= 100;
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60)       { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else              { r = c; b = x; }
+  const hex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, "0");
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+function hexToHsv(hex: string): [number, number, number] {
+  if (!hex || hex.length < 7) return [0, 0, 100];
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    switch (max) {
+      case r: h = ((g - b) / d % 6) * 60; break;
+      case g: h = ((b - r) / d + 2) * 60; break;
+      case b: h = ((r - g) / d + 4) * 60; break;
+    }
+    if (h < 0) h += 360;
+  }
+  return [h, max === 0 ? 0 : (d / max) * 100, max * 100];
+}
+
+function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChange: (c: string) => void; onClose: () => void }) {
+  const [hue, setHue] = useState(() => hexToHsv(value)[0]);
+  const [sat, setSat] = useState(() => hexToHsv(value)[1]);
+  const [val, setVal] = useState(() => hexToHsv(value)[2]);
+  const [hex, setHex] = useState(value);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  const emit = (h: number, s: number, v: number) => {
+    const c = hsvToHex(h, s, v);
+    setHex(c); onChange(c);
+  };
+
+  const updateBox = (clientX: number, clientY: number) => {
+    const rect = boxRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const ns = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100));
+    const nv = Math.max(0, Math.min(100, (1 - (clientY - rect.top) / rect.height) * 100));
+    setSat(ns); setVal(nv); emit(hue, ns, nv);
+  };
+
+  return (
+    <div
+      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "12px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", left: 0 }}
+      onMouseDown={e => e.stopPropagation()}
+      onTouchStart={e => e.stopPropagation()}
+    >
+      {/* 2D gradient box */}
+      <div
+        ref={boxRef}
+        style={{ width: "100%", height: "150px", position: "relative", borderRadius: "2px", cursor: "crosshair", touchAction: "none", marginBottom: "10px", flexShrink: 0 }}
+        onMouseDown={e => { e.preventDefault(); updateBox(e.clientX, e.clientY); }}
+        onMouseMove={e => { if (e.buttons === 1) updateBox(e.clientX, e.clientY); }}
+        onTouchStart={e => { e.preventDefault(); e.stopPropagation(); updateBox(e.touches[0].clientX, e.touches[0].clientY); }}
+        onTouchMove={e => { e.preventDefault(); e.stopPropagation(); updateBox(e.touches[0].clientX, e.touches[0].clientY); }}
+      >
+        <div style={{ position: "absolute", inset: 0, background: `hsl(${hue},100%,50%)` }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right,#fff,transparent)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,#000,transparent)" }} />
+        <div style={{ position: "absolute", left: `${sat}%`, top: `${100 - val}%`, width: 14, height: 14, borderRadius: "50%", border: "2px solid #fff", transform: "translate(-50%,-50%)", pointerEvents: "none", boxShadow: "0 0 3px rgba(0,0,0,0.5)" }} />
+      </div>
+      {/* Hue slider */}
+      <input type="range" min="0" max="360" value={Math.round(hue)}
+        style={{ width: "100%", marginBottom: "10px", height: "12px", borderRadius: "6px", cursor: "pointer",
+          background: "linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)",
+          appearance: "none" as const, outline: "none" }}
+        onChange={e => { const nh = +e.target.value; setHue(nh); emit(nh, sat, val); }}
+        onTouchStart={e => e.stopPropagation()}
+      />
+      {/* Preview + hex */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div style={{ width: 28, height: 28, background: value, border: "1px solid var(--border)", flexShrink: 0 }} />
+        <input type="text" value={hex} onChange={e => { setHex(e.target.value); if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) { const [nh,ns,nv] = hexToHsv(e.target.value); setHue(nh); setSat(ns); setVal(nv); onChange(e.target.value); } }}
+          style={{ flex: 1, fontSize: "11px", padding: "4px 6px", border: "1px solid var(--border)", fontFamily: "monospace", minWidth: 0 }} />
+        <button onClick={onClose} style={{ fontSize: "12px", border: "1px solid var(--border)", background: "#fff", padding: "3px 8px", cursor: "pointer", flexShrink: 0 }}>✕</button>
+      </div>
+    </div>
+  );
+}
+
+function ColorRow({ label, presets, current, onChange, isCustom }: { label: string; presets: {v:string;l:string}[]; current: string; onChange: (c:string)=>void; isCustom: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <p style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "8px" }}>{label}</p>
+      <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+        {presets.map(opt => (
+          <button key={opt.v} onClick={() => { onChange(opt.v); setOpen(false); }} title={opt.l}
+            style={{ width: "28px", height: "28px", background: opt.v, border: current === opt.v ? "2px solid var(--text)" : "1px solid var(--border)", cursor: "pointer", flexShrink: 0 }} />
+        ))}
+        <div style={{ position: "relative" }}>
+          <button onClick={() => setOpen(o => !o)} title="Custom"
+            style={{ width: "28px", height: "28px", border: isCustom ? "2px solid var(--text)" : "1px solid var(--border)", background: isCustom ? current : "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+            {!isCustom && <div style={{ width: "18px", height: "18px", borderRadius: "50%", background: "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)", pointerEvents: "none" }} />}
+          </button>
+          {open && <ColorPickerPopup value={isCustom ? current : "#ff0000"} onChange={onChange} onClose={() => setOpen(false)} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────── controls panel ────────────────────────── */
 const BG_PRESETS  = [{ v: "#FFFFFF", l: "White" }, { v: "#F8F7F4", l: "Warm" }, { v: "#F3F0EA", l: "Cream" }, { v: "#0C0C0C", l: "Black" }];
 const TXT_PRESETS = [{ v: "#0A0A0A", l: "Black" }, { v: "#FFFFFF", l: "White" }, { v: "#888888", l: "Gray" }];
@@ -711,25 +822,6 @@ function ControlsPanel({ canvas, bgColor, setBgColor, txtColor, setTxtColor, fon
     { tag: "stats",   label: "Stats" },
     { tag: "contact", label: "Contact" },
   ];
-
-  function ColorRow({ label, presets, current, onChange, isCustom }: { label: string; presets: {v:string;l:string}[]; current: string; onChange: (c:string)=>void; isCustom: boolean }) {
-    return (
-      <div>
-        <p style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "8px" }}>{label}</p>
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-          {presets.map(opt => (
-            <button key={opt.v} onClick={() => onChange(opt.v)} title={opt.l}
-              style={{ width: "28px", height: "28px", background: opt.v, border: current === opt.v ? "2px solid var(--text)" : "1px solid var(--border)", cursor: "pointer", flexShrink: 0 }} />
-          ))}
-          <div title="Custom" style={{ position: "relative", width: "28px", height: "28px", border: isCustom ? "2px solid var(--text)" : "1px solid var(--border)", background: isCustom ? current : "#fff", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer" }}>
-            {!isCustom && <div style={{ width: "18px", height: "18px", borderRadius: "50%", background: "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)", pointerEvents: "none" }} />}
-            <input type="color" value={isCustom ? current : "#ffffff"} onChange={e => onChange(e.target.value)}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none", padding: 0 }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
@@ -1011,7 +1103,7 @@ function ComcardPageInner() {
         {step === "design" && (
           <div className="comcard-design-layout">
             {/* 캔버스 영역 (데스크탑: flex 1 / 모바일: order 1) */}
-            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
