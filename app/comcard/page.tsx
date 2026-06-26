@@ -1196,10 +1196,23 @@ function ComcardPageInner() {
     el.addEventListener("touchstart", onStart, { passive: true });
     el.addEventListener("touchmove", onMove, { passive: false });
     el.addEventListener("touchend", onEnd);
+
+    // 데스크탑: Ctrl+스크롤 또는 트랙패드 핀치(ctrlKey=true로 들어옴)
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const delta = -e.deltaY * 0.001;
+      const next = Math.min(2.0, Math.max(0.4, userZoomRef.current + delta));
+      userZoomRef.current = next;
+      setUserZoom(Math.round(next * 20) / 20);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+
     return () => {
       el.removeEventListener("touchstart", onStart);
       el.removeEventListener("touchmove", onMove);
       el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("wheel", onWheel);
     };
   }, [step]);
 
