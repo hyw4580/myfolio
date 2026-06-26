@@ -123,7 +123,7 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
             {/* 이름 + 스펙 + 버튼 */}
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", paddingTop: "4px" }}>
               <div>
-                <h1 style={{ fontSize: "clamp(24px, 2.5vw, 38px)", fontWeight: 800, letterSpacing: "0.02em", textTransform: "uppercase", lineHeight: 1.05, marginBottom: "6px", fontFamily: font }}>
+                <h1 style={{ fontSize: "clamp(24px, 2.5vw, 38px)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: 1.05, marginBottom: "6px", fontFamily: "var(--font-cormorant), serif" }}>
                   {profile.eng_name ?? "—"}
                 </h1>
                 {profile.kor_name && (

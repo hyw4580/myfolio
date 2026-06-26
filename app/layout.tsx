@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bodoni_Moda, Inter } from "next/font/google";
+import { Bodoni_Moda, Inter, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
 
 const cormorant = Bodoni_Moda({
@@ -12,6 +12,12 @@ const cormorant = Bodoni_Moda({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+const notoSerifKR = Noto_Serif_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-korean",
 });
 
 export const metadata: Metadata = {
@@ -30,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang="ko" className={`${cormorant.variable} ${inter.variable} ${notoSerifKR.variable}`}>
       <body>{children}</body>
     </html>
   );

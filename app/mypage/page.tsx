@@ -126,7 +126,7 @@ export default function MyPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "48px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <p style={{ fontSize: "11px", letterSpacing: "0.2em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "8px" }}>My Page</p>
-            <h1 style={{ fontSize: "32px", fontWeight: 300, fontStyle: "italic", fontFamily: "Georgia, serif" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: 400, fontStyle: "italic", fontFamily: "var(--font-cormorant), serif" }}>
               {profile.eng_name || user?.email || "내 계정"}
             </h1>
           </div>
@@ -238,7 +238,7 @@ export default function MyPage() {
             <div>
               <label style={labelStyle}>성별</label>
               <select
-                style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
+                style={{ ...inputStyle, cursor: "pointer" }}
                 value={profile.gender ?? ""}
                 onChange={e => update("gender", e.target.value)}
               >
@@ -259,7 +259,7 @@ export default function MyPage() {
                 <div>
                   <label style={labelStyle}>출생연도</label>
                   <select
-                    style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
+                    style={{ ...inputStyle, cursor: "pointer" }}
                     value={profile.birth_year ?? defaultYear}
                     onChange={e => update("birth_year", Number(e.target.value))}
                   >
