@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "../components/Nav";
@@ -7,6 +7,75 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 type CompCard = { id: string; title: string; canvas_type: string; created_at: string; };
+
+function YearDropdown({ value, onChange, inputStyle }: { value: number | null; onChange: (y: number) => void; inputStyle: React.CSSProperties }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+
+  useEffect(() => {
+    if (!open || !listRef.current || !value) return;
+    const el = listRef.current.querySelector(`[data-year="${value}"]`) as HTMLElement | null;
+    if (el) el.scrollIntoView({ block: "center" });
+  }, [open, value]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      {/* 트리거 버튼 */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ ...inputStyle, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+      >
+        <span style={{ color: value ? "inherit" : "var(--muted)" }}>{value ?? "— Select —"}</span>
+        <span style={{ fontSize: "10px", color: "var(--muted)" }}>{open ? "▲" : "▼"}</span>
+      </div>
+
+      {/* 드롭다운 리스트 */}
+      {open && (
+        <div
+          ref={listRef}
+          onWheel={e => e.stopPropagation()}
+          onTouchMove={e => e.stopPropagation()}
+          style={{
+            position: "absolute", top: "100%", left: 0, right: 0, zIndex: 999,
+            background: "#fff", border: "1px solid var(--border)",
+            maxHeight: "200px", overflowY: "scroll",
+            overscrollBehavior: "contain",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+            marginTop: "2px",
+          }}
+        >
+          {years.map(y => (
+            <div
+              key={y}
+              data-year={y}
+              onMouseDown={e => { e.preventDefault(); onChange(y); setOpen(false); }}
+              style={{
+                padding: "9px 14px", fontSize: "14px", cursor: "pointer",
+                background: y === value ? "var(--text)" : "transparent",
+                color: y === value ? "#fff" : "var(--text)",
+                userSelect: "none",
+              }}
+            >
+              {y}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 type Profile = {
@@ -254,16 +323,7 @@ export default function MyPage() {
             {/* 출생연도 */}
             <div>
               <label style={labelStyle}>출생연도</label>
-              <select
-                style={{ ...inputStyle, cursor: "pointer" }}
-                value={profile.birth_year ?? ""}
-                onChange={e => update("birth_year", Number(e.target.value))}
-              >
-                <option value="">— Select —</option>
-                {Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+              <YearDropdown value={profile.birth_year} onChange={y => update("birth_year", y)} inputStyle={inputStyle} />
             </div>
 
             {/* 나머지 필드 */}
