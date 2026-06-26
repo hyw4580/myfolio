@@ -1042,7 +1042,7 @@ function ComcardPageInner() {
   const editIdRef       = useRef<string | null>(editId); // 저장 시 update vs insert 판단용
   const [canvasScale,   setCanvasScale]  = useState(1);
   const [controlsOpen,  setControlsOpen] = useState(false);
-  const [mobileTab,     setMobileTab]    = useState<"canvas" | "controls">("canvas");
+  const [userZoom,      setUserZoom]     = useState(1);
 
   // 기존 카드 불러오기
   useEffect(() => {
@@ -1227,14 +1227,15 @@ function ComcardPageInner() {
 
         {/* ── Step: Design ── */}
         {step === "design" && (
-          <div className={`comcard-design-layout comcard-tab-${mobileTab}`}>
-            {/* 모바일 탭바 */}
-            <div className="comcard-mobile-tabs">
-              <button className={mobileTab === "canvas" ? "active" : ""} onClick={() => setMobileTab("canvas")}>Canvas</button>
-              <button className={mobileTab === "controls" ? "active" : ""} onClick={() => setMobileTab("controls")}>Controls</button>
-            </div>
+          <div className="comcard-design-layout">
             {/* 캔버스 영역 */}
             <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
+              {/* 줌 버튼 */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", alignSelf: "flex-end" }}>
+                <button onClick={() => setUserZoom(z => Math.max(0.4, Math.round((z - 0.1) * 10) / 10))} style={{ width: "28px", height: "28px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>−</button>
+                <span style={{ fontSize: "11px", color: "var(--muted)", minWidth: "36px", textAlign: "center" }}>{Math.round(userZoom * 100)}%</span>
+                <button onClick={() => setUserZoom(z => Math.min(2.0, Math.round((z + 0.1) * 10) / 10))} style={{ width: "28px", height: "28px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>+</button>
+              </div>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
@@ -1242,9 +1243,9 @@ function ComcardPageInner() {
                 selectedFields={selectedData} statsLayout={statsLayout}
                 onPhotoResize={(canvasW) => { lastResizedWRef.current = canvasW; }}
                 canvasRef={canvasRef}
-                scale={canvasScale}
+                scale={canvasScale * userZoom}
               />
-              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale * userZoom, flexWrap: "wrap" }}>
                 <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, minWidth: "120px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
                   {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
                 </button>
