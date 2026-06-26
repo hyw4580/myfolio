@@ -22,7 +22,7 @@ export default async function Home() {
         position: "relative", minHeight: "100vh", overflow: "hidden",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        textAlign: "center", padding: "120px 24px 100px",
+        textAlign: "center", padding: "160px 24px 80px",
         borderBottom: "1px solid var(--border)",
       }}>
         {/* Background video */}
@@ -41,7 +41,7 @@ export default async function Home() {
             Model Digital Portfolio
           </p>
           <h1 className="font-display" style={{
-            fontSize: "clamp(28px, 6vw, 80px)", fontWeight: 400,
+            fontSize: "clamp(24px, 4.5vw, 62px)", fontWeight: 400,
             lineHeight: 1.1, letterSpacing: "-0.01em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
           }}>
             모델의 첫인상을<br />완성하다
