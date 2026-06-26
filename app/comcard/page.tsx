@@ -144,15 +144,15 @@ function getDefaultTextBlocks(canvas: CanvasType): TextBlock[] {
 /* ─────────────── photo element (display only) ───────────────── */
 function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean }) {
   const ph = item.h;
-  const H = { position: "absolute" as const, background: "#0066FF", zIndex: 30, pointerEvents: "none" as const };
-  const corner = { ...H, width: 8, height: 8 };
-  const edgeH  = { ...H, width: 20, height: 4, marginLeft: "-10px", marginTop: "-2px" };
-  const edgeV  = { ...H, width: 4, height: 20, marginTop: "-10px", marginLeft: "-2px" };
+  const base: React.CSSProperties = { position: "absolute", background: "#fff", border: "1px solid #0066FF", zIndex: 30, pointerEvents: "none" };
+  const corner: React.CSSProperties = { ...base, width: 6, height: 6 };
+  const edgeH:  React.CSSProperties = { ...base, width: 16, height: 3, left: "50%", transform: "translateX(-50%)" };
+  const edgeV:  React.CSSProperties = { ...base, width: 3, height: 16, top: "50%", transform: "translateY(-50%)" };
   return (
     <div style={{
       position: "absolute", left: item.x, top: item.y, width: item.w, height: ph,
       cursor: "move", userSelect: "none",
-      outline: isSelected ? "1px solid #0066FF" : "1px solid rgba(0,0,0,0.08)",
+      outline: isSelected ? "1px solid rgba(0,102,255,0.7)" : "1px solid rgba(0,0,0,0.08)",
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
@@ -164,16 +164,14 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
       }
       {isSelected && (
         <>
-          {/* 코너 핸들 */}
-          <div style={{ ...corner, top: -4, left: -4 }} />
-          <div style={{ ...corner, top: -4, right: -4 }} />
-          <div style={{ ...corner, bottom: -4, left: -4 }} />
-          <div style={{ ...corner, bottom: -4, right: -4 }} />
-          {/* 엣지 핸들 */}
-          <div style={{ ...edgeH, top: -2, left: "50%" }} />
-          <div style={{ ...edgeH, bottom: -2, left: "50%" }} />
-          <div style={{ ...edgeV, left: -2, top: "50%" }} />
-          <div style={{ ...edgeV, right: -2, top: "50%" }} />
+          <div style={{ ...corner, top: -3, left: -3 }} />
+          <div style={{ ...corner, top: -3, right: -3 }} />
+          <div style={{ ...corner, bottom: -3, left: -3 }} />
+          <div style={{ ...corner, bottom: -3, right: -3 }} />
+          <div style={{ ...edgeH, top: -2 }} />
+          <div style={{ ...edgeH, bottom: -2 }} />
+          <div style={{ ...edgeV, left: -2 }} />
+          <div style={{ ...edgeV, right: -2 }} />
         </>
       )}
       {isMain && <span style={{ position: "absolute", top: 6, left: 6, fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", background: "rgba(0,0,0,0.5)", color: "#fff", padding: "2px 7px", pointerEvents: "none" }}>Main</span>}
@@ -396,18 +394,26 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const h    = d.handle;
 
         // Compute new W, H, X, Y based on handle
+        // Corners: maintain aspect ratio (W drives, H = W × ratio)
+        // Edges: free resize in one direction only
+        const ratio = d.oh / d.ow;
         let newW = d.ow, newH = d.oh, newX = d.ox, newY = d.oy;
-        if (h === "br") { newW = d.ow + dx; newH = d.oh + dy; }
-        else if (h === "bl") { newW = d.ow - dx; newH = d.oh + dy; newX = d.ox + dx; }
-        else if (h === "tr") { newW = d.ow + dx; newH = d.oh - dy; newY = d.oy + dy; }
-        else if (h === "tl") { newW = d.ow - dx; newH = d.oh - dy; newX = d.ox + dx; newY = d.oy + dy; }
+        if (h === "br") { newW = d.ow + dx; newH = Math.round(newW * ratio); }
+        else if (h === "bl") { newW = d.ow - dx; newH = Math.round(newW * ratio); newX = d.ox + d.ow - newW; }
+        else if (h === "tr") { newW = d.ow + dx; newH = Math.round(newW * ratio); newY = d.oy + d.oh - newH; }
+        else if (h === "tl") { newW = d.ow - dx; newH = Math.round(newW * ratio); newX = d.ox + d.ow - newW; newY = d.oy + d.oh - newH; }
         else if (h === "r")  { newW = d.ow + dx; }
         else if (h === "l")  { newW = d.ow - dx; newX = d.ox + dx; }
         else if (h === "b")  { newH = d.oh + dy; }
         else if (h === "t")  { newH = d.oh - dy; newY = d.oy + dy; }
 
         // Clamp minimums
-        if (newW < 40) { newW = 40; if (h === "bl" || h === "tl" || h === "l") newX = d.ox + d.ow - 40; }
+        if (newW < 40) {
+          newW = 40;
+          if (h === "bl" || h === "tl" || h === "l") newX = d.ox + d.ow - 40;
+          if (h === "bl" || h === "tl" || h === "br" || h === "tr") newH = Math.round(40 * ratio);
+          if (h === "tr" || h === "tl") newY = d.oy + d.oh - newH;
+        }
         if (newH < 40) { newH = 40; if (h === "tr" || h === "tl" || h === "t") newY = d.oy + d.oh - 40; }
 
         const snapXs: number[] = [];
