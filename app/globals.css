@@ -196,8 +196,8 @@ button:focus {
   }
   .comcard-canvas-main {
     flex: none !important;
-    overflow: visible !important;
-    overflow-x: hidden !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
     padding: 20px 16px 32px !important;
   }
   .comcard-sidebar {

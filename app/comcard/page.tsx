@@ -790,7 +790,7 @@ function ColorPickerPopup({ value, onChange, onClose }: { value: string; onChang
 
   return (
     <div
-      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", left: 0 }}
+      style={{ position: "absolute", zIndex: 300, background: "#fff", border: "1px solid var(--border)", padding: "14px", width: "210px", boxShadow: "0 6px 24px rgba(0,0,0,0.18)", top: "36px", right: 0 }}
       onMouseDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
@@ -1108,7 +1108,8 @@ function ComcardPageInner() {
     const update = () => {
       const el = mainAreaRef.current;
       if (!el) return;
-      const available = el.clientWidth - 48;
+      const padding = window.innerWidth <= 768 ? 32 : 48;
+      const available = el.clientWidth - padding;
       setCanvasScale(Math.min(1, available / w));
     };
     // ref가 DOM에 붙은 후 실행되도록 setTimeout 0
@@ -1180,7 +1181,7 @@ function ComcardPageInner() {
         {step === "design" && (
           <div className="comcard-design-layout">
             {/* 캔버스 영역 (데스크탑: flex 1 / 모바일: order 1) */}
-            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "auto", background: "#EBEBEB" }}>
               <CanvasEditor
                 canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
                 photos={photos} setPhotos={setPhotos}
