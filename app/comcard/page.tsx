@@ -561,7 +561,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       ref={canvasRef}
       onMouseDown={handleCanvasPointerDown}
       onTouchStart={(e) => { handleCanvasPointerDown(e); }}
-      style={{ position: "absolute", top: 0, left: 0, width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})` }}
+      style={{ position: "absolute", top: 0, left: 0, width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible", transformOrigin: "top left", transform: `scale(${scale})` }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
@@ -1047,8 +1047,11 @@ function ComcardPageInner() {
 
   const saveImage = async () => {
     if (!canvasRef.current) return;
+    const el = canvasRef.current;
+    el.style.overflow = "hidden";
     const { default: html2canvas } = await import("html2canvas");
-    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2, ignoreElements: (el) => el.classList.contains("crop-guide") });
+    const c = await html2canvas(el, { useCORS: true, scale: 2, ignoreElements: (e) => e.classList.contains("crop-guide") });
+    el.style.overflow = "visible";
     const a = document.createElement("a");
     a.href = c.toDataURL("image/png");
     a.download = "myfolio-comcard.png";
@@ -1057,9 +1060,11 @@ function ComcardPageInner() {
 
   const downloadPDF = async () => {
     if (!canvasRef.current) return;
+    const el = canvasRef.current;
+    el.style.overflow = "hidden";
     const { default: html2canvas } = await import("html2canvas");
     const { default: jsPDF } = await import("jspdf");
-    const c = await html2canvas(canvasRef.current, { useCORS: true, scale: 2, ignoreElements: (el) => el.classList.contains("crop-guide") });
+    const c = await html2canvas(el, { useCORS: true, scale: 2, ignoreElements: (e) => e.classList.contains("crop-guide") });
     const imgData = c.toDataURL("image/png");
     const { w, h } = CANVAS[canvas];
     const orientation = w > h ? "landscape" : "portrait";
@@ -1068,6 +1073,7 @@ function ComcardPageInner() {
     const ph = pdf.internal.pageSize.getHeight();
     pdf.addImage(imgData, "PNG", 0, 0, pw, ph);
     pdf.save("myfolio-comcard.pdf");
+    el.style.overflow = "visible";
   };
 
   const addPhoto = useCallback(() => {
