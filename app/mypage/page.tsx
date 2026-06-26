@@ -126,7 +126,7 @@ export default function MyPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "48px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <p style={{ fontSize: "11px", letterSpacing: "0.2em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "8px" }}>My Page</p>
-            <h1 style={{ fontSize: "32px", fontWeight: 400, fontStyle: "italic", fontFamily: "var(--font-cormorant), serif" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: 400, fontFamily: "var(--font-cormorant), var(--font-korean), serif" }}>
               {profile.eng_name || user?.email || "내 계정"}
             </h1>
           </div>

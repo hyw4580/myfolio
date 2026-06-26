@@ -41,8 +41,8 @@ export default async function Home() {
             Model Digital Portfolio
           </p>
           <h1 className="font-display" style={{
-            fontSize: "clamp(36px, 10vw, 120px)", fontWeight: 300, fontStyle: "italic",
-            lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
+            fontSize: "clamp(36px, 10vw, 120px)", fontWeight: 400,
+            lineHeight: 1.1, letterSpacing: "-0.01em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
           }}>
             모델의 첫인상을<br />완성하다
           </h1>
@@ -178,7 +178,7 @@ export default async function Home() {
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>
               Become a Model
             </p>
-            <h2 className="font-display" style={{ fontSize: "clamp(40px, 4vw, 60px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1, marginBottom: "28px" }}>
+            <h2 className="font-display" style={{ fontSize: "clamp(40px, 4vw, 60px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "28px" }}>
               지금 바로<br />나를 알려보세요
             </h2>
             <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, marginBottom: "44px" }}>
@@ -212,7 +212,7 @@ export default async function Home() {
       <section id="contact" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
-          <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", marginBottom: "20px", lineHeight: 1.1 }}>
+          <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 400, marginBottom: "20px", lineHeight: 1.1 }}>
             궁금한 점이 있으신가요?
           </h2>
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.8, marginBottom: "52px" }}>

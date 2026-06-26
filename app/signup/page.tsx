@@ -51,7 +51,7 @@ export default function SignupPage() {
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>
             myfolio
           </p>
-          <h1 className="font-display" style={{ fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1, marginBottom: "24px" }}>
+          <h1 className="font-display" style={{ fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "24px" }}>
             나만의 포트폴리오를<br />시작하세요
           </h1>
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, maxWidth: "360px" }}>
@@ -88,7 +88,7 @@ export default function SignupPage() {
           {/* Step 1: Account */}
           {step === 1 && (
             <div>
-              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 300, fontStyle: "italic", marginBottom: "8px" }}>
+              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
                 계정 정보
               </h2>
               <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>로그인에 사용할 기본 정보를 입력해주세요.</p>
@@ -148,7 +148,7 @@ export default function SignupPage() {
           {/* Step 2: Profile */}
           {step === 2 && (
             <div>
-              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 300, fontStyle: "italic", marginBottom: "8px" }}>
+              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
                 프로필 정보
               </h2>
               <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>컴카드에 활용될 정보입니다. 나중에 언제든 수정할 수 있어요.</p>
@@ -199,7 +199,7 @@ export default function SignupPage() {
           {/* Step 3: Measurements */}
           {step === 3 && (
             <div>
-              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 300, fontStyle: "italic", marginBottom: "8px" }}>
+              <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
                 신체 정보
               </h2>
               <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>스크롤을 돌려 값을 선택하세요.</p>
