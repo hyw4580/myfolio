@@ -916,17 +916,20 @@ function ComcardPageInner() {
 
   const { w, h } = CANVAS[canvas];
 
-  // 모바일에서 캔버스를 화면에 맞게 축소
+  // 모바일에서 캔버스를 화면에 맞게 축소 — step이 "design"으로 바뀔 때 재계산
   useEffect(() => {
+    if (step !== "design") return;
     const update = () => {
-      if (!mainAreaRef.current) return;
-      const available = mainAreaRef.current.clientWidth - 48;
+      const el = mainAreaRef.current;
+      if (!el) return;
+      const available = el.clientWidth - 48;
       setCanvasScale(Math.min(1, available / w));
     };
-    update();
+    // ref가 DOM에 붙은 후 실행되도록 setTimeout 0
+    const t = setTimeout(update, 0);
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [w]);
+    return () => { clearTimeout(t); window.removeEventListener("resize", update); };
+  }, [w, step]);
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -1007,7 +1010,7 @@ function ComcardPageInner() {
                 statsLayout={statsLayout} setStatsLayout={setStatsLayout}
               />
             </aside>
-            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflowY: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
               {/* 모바일 전용 컨트롤 토글 */}
               <div className="comcard-mobile-toggle">
                 <button onClick={() => setStep("fields")} style={{ fontSize: "11px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: "#fff", padding: "8px 14px", cursor: "pointer", color: "var(--muted)" }}>← Back</button>
