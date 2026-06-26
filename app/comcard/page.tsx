@@ -1310,18 +1310,15 @@ function ComcardPageInner() {
                 textBlocks={textBlocks} setTextBlocks={setTextBlocks}
                 statsLayout={statsLayout} setStatsLayout={setStatsLayout}
               />
+              {/* 저장 / 다운로드 버튼 */}
+              <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <button onClick={saveCard} disabled={cardSaving} style={{ width: "100%", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
+                </button>
+                <button onClick={saveImage} style={{ width: "100%", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
+                <button onClick={downloadPDF} style={{ width: "100%", background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
+              </div>
             </aside>
-          </div>
-        )}
-
-        {/* 저장 / 다운로드 버튼 — 항상 하단 고정 */}
-        {step === "design" && (
-          <div style={{ display: "flex", gap: "0", borderTop: "1px solid var(--border)", background: "#fff" }}>
-            <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "none", borderRight: "1px solid var(--border)", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
-              {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
-            </button>
-            <button onClick={saveImage} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "none", borderRight: "1px solid var(--border)", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
-            <button onClick={downloadPDF} style={{ flex: 1, background: "var(--text)", color: "#fff", border: "none", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
           </div>
         )}
       </div>
