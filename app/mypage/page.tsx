@@ -250,23 +250,26 @@ export default function MyPage() {
               </select>
             </div>
 
-            {/* 출생연도 — 스크롤 셀렉트 */}
+            {/* 출생연도 — 숫자 입력 */}
             {(() => {
               const currentYear = new Date().getFullYear();
               const defaultYear = currentYear - 20;
-              const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
               return (
                 <div>
                   <label style={labelStyle}>출생연도</label>
-                  <select
-                    style={{ ...inputStyle, cursor: "pointer" }}
-                    value={profile.birth_year ?? defaultYear}
-                    onChange={e => update("birth_year", Number(e.target.value))}
-                  >
-                    {years.map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="number"
+                    min={1900}
+                    max={currentYear}
+                    placeholder={String(defaultYear)}
+                    value={profile.birth_year ?? ""}
+                    onChange={e => {
+                      const v = parseInt(e.target.value);
+                      if (!isNaN(v) && v >= 1900 && v <= currentYear) update("birth_year", v);
+                      else if (e.target.value === "") update("birth_year", null);
+                    }}
+                    style={inputStyle}
+                  />
                 </div>
               );
             })()}

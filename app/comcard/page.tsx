@@ -14,13 +14,14 @@ const CANVAS = {
 type CanvasType = keyof typeof CANVAS;
 
 /* ─────────────────────────── types ─────────────────────────── */
-type PhotoItem = { id: number; src: string | null; x: number; y: number; w: number };
+type PhotoItem = { id: number; src: string | null; x: number; y: number; w: number; h: number };
 type TextBlock  = { id: string; tag: "name" | "korName" | "stats" | "contact"; x: number; y: number; fontSize: number };
 type SnapLines  = { xs: number[]; ys: number[] };
 type Corner = "br" | "bl" | "tr" | "tl";
+type Handle = Corner | "t" | "b" | "l" | "r";
 type DragState  =
   | { type: "photo-move";   id: number; mx: number; my: number; ox: number; oy: number }
-  | { type: "photo-resize"; id: number; mx: number; my: number; ow: number; ox: number; oy: number; corner: Corner }
+  | { type: "photo-resize"; id: number; mx: number; my: number; ow: number; oh: number; ox: number; oy: number; handle: Handle }
   | { type: "text-move";    id: string; mx: number; my: number; ox: number; oy: number }
   | null;
 
@@ -83,13 +84,13 @@ function computePhotoGrid(canvas: CanvasType, count: number, mainW: number): Pho
       id: i, src: null,
       x: sx + (i % cols) * (mainW + gap),
       y: sy + Math.floor(i / cols) * (photoH + gap),
-      w: mainW,
+      w: mainW, h: photoH,
     }));
   } else {
     // landscape: big photo left + smaller grid right
     const mainH  = Math.round(mainW * (4/3));
     const rest   = count - 1;
-    if (rest === 0) return [{ id: 0, src: null, x: Math.floor((w - mainW) / 2), y: Math.floor((h - mainH) / 2), w: mainW }];
+    if (rest === 0) return [{ id: 0, src: null, x: Math.floor((w - mainW) / 2), y: Math.floor((h - mainH) / 2), w: mainW, h: mainH }];
     const rCols  = rest <= 2 ? 1 : 2;
     const rRows  = Math.ceil(rest / rCols);
     const rx     = mainW + gap * 2;
@@ -103,9 +104,9 @@ function computePhotoGrid(canvas: CanvasType, count: number, mainW: number): Pho
     const rStartY = Math.max(gap, Math.floor((h - rTotal) / 2));
     const mainY   = Math.max(gap, Math.floor((h - mainH) / 2));
     return Array.from({ length: count }, (_, i) => {
-      if (i === 0) return { id: 0, src: null, x: gap, y: mainY, w: mainW };
+      if (i === 0) return { id: 0, src: null, x: gap, y: mainY, w: mainW, h: mainH };
       const ri = i - 1;
-      return { id: i, src: null, x: rx + gap + (ri % rCols) * (rW + gap), y: rStartY + Math.floor(ri / rCols) * (rH + gap), w: rW };
+      return { id: i, src: null, x: rx + gap + (ri % rCols) * (rW + gap), y: rStartY + Math.floor(ri / rCols) * (rH + gap), w: rW, h: rH };
     });
   }
 }
@@ -142,12 +143,16 @@ function getDefaultTextBlocks(canvas: CanvasType): TextBlock[] {
 
 /* ─────────────── photo element (display only) ───────────────── */
 function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean }) {
-  const ph = Math.round(item.w * (4/3));
+  const ph = item.h;
+  const H = { position: "absolute" as const, background: "#0066FF", zIndex: 30, pointerEvents: "none" as const };
+  const corner = { ...H, width: 8, height: 8 };
+  const edgeH  = { ...H, width: 20, height: 4, marginLeft: "-10px", marginTop: "-2px" };
+  const edgeV  = { ...H, width: 4, height: 20, marginTop: "-10px", marginLeft: "-2px" };
   return (
     <div style={{
       position: "absolute", left: item.x, top: item.y, width: item.w, height: ph,
       cursor: "move", userSelect: "none",
-      outline: isSelected ? "2px solid #0066FF" : "1px solid rgba(0,0,0,0.08)",
+      outline: isSelected ? "1px solid #0066FF" : "1px solid rgba(0,0,0,0.08)",
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
@@ -159,10 +164,16 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
       }
       {isSelected && (
         <>
-          <div style={{ position: "absolute", top:    -10, left:  -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", top:    -10, right: -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -10, left:  -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: -10, right: -10, width: 22, height: 22, background: "#0066FF", zIndex: 30, pointerEvents: "none" }} />
+          {/* 코너 핸들 */}
+          <div style={{ ...corner, top: -4, left: -4 }} />
+          <div style={{ ...corner, top: -4, right: -4 }} />
+          <div style={{ ...corner, bottom: -4, left: -4 }} />
+          <div style={{ ...corner, bottom: -4, right: -4 }} />
+          {/* 엣지 핸들 */}
+          <div style={{ ...edgeH, top: -2, left: "50%" }} />
+          <div style={{ ...edgeH, bottom: -2, left: "50%" }} />
+          <div style={{ ...edgeV, left: -2, top: "50%" }} />
+          <div style={{ ...edgeV, right: -2, top: "50%" }} />
         </>
       )}
       {isMain && <span style={{ position: "absolute", top: 6, left: 6, fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase", background: "rgba(0,0,0,0.5)", color: "#fff", padding: "2px 7px", pointerEvents: "none" }}>Main</span>}
@@ -294,7 +305,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const prev    = photosRef.current;
         const moving  = prev.find(p => p.id === d.id);
         if (!moving) return;
-        const ph = Math.round(moving.w * (4/3));
+        const ph = moving.h;
         const cv = CANVAS[canvasTypeRef.current];
 
         let nx = d.ox + (clientX - d.mx) / s;
@@ -327,7 +338,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         // Other photo edge snaps
         for (const other of prev) {
           if (other.id === d.id) continue;
-          const oph = Math.round(other.w * (4/3));
+          const oph = other.h;
           if (!snapXs.length) {
             if      (Math.abs(nx - other.x) < SNAP)                     { nx = other.x; snapXs.push(other.x); }
             else if (Math.abs(nx - (other.x + other.w)) < SNAP)         { nx = other.x + other.w; snapXs.push(other.x + other.w); }
@@ -362,12 +373,11 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
           const vGaps = new Set<number>();
           for (const a of others) for (const b of others) {
             if (a === b) continue;
-            const aH = Math.round(a.w * (4/3));
-            const g = Math.round(b.y - (a.y + aH));
+            const g = Math.round(b.y - (a.y + a.h));
             if (g > 0 && g <= 80) vGaps.add(g);
           }
           gapY: for (const other of others) {
-            const oph = Math.round(other.w * (4/3));
+            const oph = other.h;
             for (const g of vGaps) {
               if (Math.abs(ny - (other.y + oph + g)) < SNAP)          { ny = other.y + oph + g; snapYs.push(other.y + oph); break gapY; }
               if (Math.abs(ny + ph + g - other.y) < SNAP)             { ny = other.y - ph - g; snapYs.push(other.y); break gapY; }
@@ -382,90 +392,75 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const prev = photosRef.current;
         const cv   = CANVAS[canvasTypeRef.current];
         const dx   = (clientX - d.mx) / s;
-        const oh   = Math.round(d.ow * (4/3));
+        const dy   = (clientY - d.my) / s;
+        const h    = d.handle;
 
-        // Compute raw newW and position based on corner
-        let rawW: number;
-        let newX = d.ox;
-        let newY = d.oy;
-        if (d.corner === "br") { rawW = d.ow + dx; }
-        else if (d.corner === "bl") { rawW = d.ow - dx; newX = d.ox + dx; }
-        else if (d.corner === "tr") { rawW = d.ow + dx; }
-        else { /* tl */ rawW = d.ow - dx; newX = d.ox + dx; }
-        let newW = Math.max(50, rawW);
+        // Compute new W, H, X, Y based on handle
+        let newW = d.ow, newH = d.oh, newX = d.ox, newY = d.oy;
+        if (h === "br") { newW = d.ow + dx; newH = d.oh + dy; }
+        else if (h === "bl") { newW = d.ow - dx; newH = d.oh + dy; newX = d.ox + dx; }
+        else if (h === "tr") { newW = d.ow + dx; newH = d.oh - dy; newY = d.oy + dy; }
+        else if (h === "tl") { newW = d.ow - dx; newH = d.oh - dy; newX = d.ox + dx; newY = d.oy + dy; }
+        else if (h === "r")  { newW = d.ow + dx; }
+        else if (h === "l")  { newW = d.ow - dx; newX = d.ox + dx; }
+        else if (h === "b")  { newH = d.oh + dy; }
+        else if (h === "t")  { newH = d.oh - dy; newY = d.oy + dy; }
 
-        // Fix: if clamped to 50, also fix the x anchor for left corners
-        if (rawW < 50 && (d.corner === "bl" || d.corner === "tl")) {
-          newX = d.ox + d.ow - 50;
-        }
-
-        // Update Y for top corners (bottom edge stays fixed)
-        if (d.corner === "tr" || d.corner === "tl") {
-          newY = d.oy + oh - Math.round(newW * (4/3));
-        }
+        // Clamp minimums
+        if (newW < 40) { newW = 40; if (h === "bl" || h === "tl" || h === "l") newX = d.ox + d.ow - 40; }
+        if (newH < 40) { newH = 40; if (h === "tr" || h === "tl" || h === "t") newY = d.oy + d.oh - 40; }
 
         const snapXs: number[] = [];
         const snapYs: number[] = [];
         const others = prev.filter(p => p.id !== d.id);
-
-        // 칼선 2mm — 먼저 체크, 더 넓은 임계값
         const m = (cv.w > cv.h ? cv.w / 297 : cv.w / 210) * 2;
         const CROP_SNAP = RESIZE_SNAP * 4;
 
-        // Edge to snap depends on corner
-        const isRightCorner  = d.corner === "br" || d.corner === "tr";
-        const isBottomCorner = d.corner === "br" || d.corner === "bl";
-
-        if (isRightCorner) {
-          const rightEdge = newX + newW;
-          if      (Math.abs(rightEdge - (cv.w - m)) < CROP_SNAP)  { newW = cv.w - m - newX; snapXs.push(cv.w - m); }
-          else if (Math.abs(rightEdge - cv.w) < RESIZE_SNAP)       { newW = cv.w - newX; snapXs.push(cv.w); }
+        // X snapping (right or left edge)
+        const movesRight = h === "br" || h === "tr" || h === "r";
+        const movesLeft  = h === "bl" || h === "tl" || h === "l";
+        if (movesRight) {
+          const re = newX + newW;
+          if      (Math.abs(re - (cv.w - m)) < CROP_SNAP) { newW = cv.w - m - newX; snapXs.push(cv.w - m); }
+          else if (Math.abs(re - cv.w) < RESIZE_SNAP)      { newW = cv.w - newX; snapXs.push(cv.w); }
           else for (const o of others) {
-            if (Math.abs(rightEdge - o.x) < RESIZE_SNAP)           { newW = o.x - newX; snapXs.push(o.x); break; }
-            if (Math.abs(rightEdge - (o.x + o.w)) < RESIZE_SNAP)   { newW = o.x + o.w - newX; snapXs.push(o.x + o.w); break; }
+            if (Math.abs(re - o.x) < RESIZE_SNAP)          { newW = o.x - newX; snapXs.push(o.x); break; }
+            if (Math.abs(re - (o.x + o.w)) < RESIZE_SNAP)  { newW = o.x + o.w - newX; snapXs.push(o.x + o.w); break; }
           }
-        } else {
-          // Left corner: snap left edge (newX)
+        } else if (movesLeft) {
           const snapX = (t: number) => { newX = t; newW = d.ox + d.ow - t; snapXs.push(t); };
-          if      (Math.abs(newX - m) < CROP_SNAP)    snapX(m);
-          else if (Math.abs(newX) < RESIZE_SNAP)       snapX(0);
+          if      (Math.abs(newX - m) < CROP_SNAP)   snapX(m);
+          else if (Math.abs(newX) < RESIZE_SNAP)      snapX(0);
           else for (const o of others) {
-            if (Math.abs(newX - o.x) < RESIZE_SNAP)           { snapX(o.x); break; }
-            if (Math.abs(newX - (o.x + o.w)) < RESIZE_SNAP)   { snapX(o.x + o.w); break; }
+            if (Math.abs(newX - o.x) < RESIZE_SNAP)          { snapX(o.x); break; }
+            if (Math.abs(newX - (o.x + o.w)) < RESIZE_SNAP)  { snapX(o.x + o.w); break; }
           }
         }
 
-        if (isBottomCorner) {
-          const bottomEdge = newY + Math.round(newW * (4/3));
-          if      (Math.abs(bottomEdge - (cv.h - m)) < CROP_SNAP)  { newW = Math.round((cv.h - m - newY) / (4/3)); snapYs.push(cv.h - m); }
-          else if (Math.abs(bottomEdge - cv.h) < RESIZE_SNAP)       { newW = Math.round((cv.h - newY) / (4/3)); snapYs.push(cv.h); }
+        // Y snapping (bottom or top edge)
+        const movesBottom = h === "br" || h === "bl" || h === "b";
+        const movesTop    = h === "tr" || h === "tl" || h === "t";
+        if (movesBottom) {
+          const be = newY + newH;
+          if      (Math.abs(be - (cv.h - m)) < CROP_SNAP) { newH = cv.h - m - newY; snapYs.push(cv.h - m); }
+          else if (Math.abs(be - cv.h) < RESIZE_SNAP)      { newH = cv.h - newY; snapYs.push(cv.h); }
           else for (const o of others) {
-            const oh2 = Math.round(o.w * (4/3));
-            if (Math.abs(bottomEdge - o.y) < RESIZE_SNAP)           { newW = Math.round((o.y - newY) / (4/3)); snapYs.push(o.y); break; }
-            if (Math.abs(bottomEdge - (o.y + oh2)) < RESIZE_SNAP)   { newW = Math.round((o.y + oh2 - newY) / (4/3)); snapYs.push(o.y + oh2); break; }
+            if (Math.abs(be - o.y) < RESIZE_SNAP)          { newH = o.y - newY; snapYs.push(o.y); break; }
+            if (Math.abs(be - (o.y + o.h)) < RESIZE_SNAP)  { newH = o.y + o.h - newY; snapYs.push(o.y + o.h); break; }
           }
-        } else {
-          // Top corner: snap top edge (newY), bottom fixed
-          const bottomFixed = d.oy + oh;
-          const snapY = (t: number) => { newY = t; newW = Math.round((bottomFixed - t) / (4/3)); snapYs.push(t); };
-          if      (Math.abs(newY - m) < CROP_SNAP)    snapY(m);
-          else if (Math.abs(newY) < RESIZE_SNAP)       snapY(0);
+        } else if (movesTop) {
+          const snapY = (t: number) => { newY = t; newH = d.oy + d.oh - t; snapYs.push(t); };
+          if      (Math.abs(newY - m) < CROP_SNAP)   snapY(m);
+          else if (Math.abs(newY) < RESIZE_SNAP)      snapY(0);
           else for (const o of others) {
-            const oh2 = Math.round(o.w * (4/3));
-            if (Math.abs(newY - o.y) < RESIZE_SNAP)           { snapY(o.y); break; }
-            if (Math.abs(newY - (o.y + oh2)) < RESIZE_SNAP)   { snapY(o.y + oh2); break; }
+            if (Math.abs(newY - o.y) < RESIZE_SNAP)          { snapY(o.y); break; }
+            if (Math.abs(newY - (o.y + o.h)) < RESIZE_SNAP)  { snapY(o.y + o.h); break; }
           }
-        }
-
-        newW = Math.max(50, newW);
-        // Re-sync top-corner Y after snap may have changed newW
-        if (d.corner === "tr" || d.corner === "tl") {
-          newY = d.oy + oh - Math.round(newW * (4/3));
         }
 
         onPhotoResize(newW);
         setSnapLines({ xs: snapXs, ys: snapYs });
-        setPhotos(p => p.map(p2 => p2.id === d.id ? { ...p2, w: newW, x: newX, y: newY } : p2));
+        setPhotos(p => p.map(p2 => p2.id === d.id ? { ...p2, w: newW, h: newH, x: newX, y: newY } : p2));
 
       } else if (d.type === "text-move") {
         const cv   = CANVAS[canvasTypeRef.current];
@@ -497,7 +492,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
         // Y snap targets: canvas edges + photo edges + other text block edges
         const yTargets = [0, cv.h, cv.h / 2];
-        for (const p of prev) { const ph = Math.round(p.w * (4/3)); yTargets.push(p.y, p.y + ph); }
+        for (const p of prev) { yTargets.push(p.y, p.y + p.h); }
         for (const b of textBlocksRef.current) {
           if (b.id === d.id) continue;
           const bs = textSizesRef.current[b.id];
@@ -534,20 +529,25 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     const cx = (clientX - rect.left) / scale;
     const cy = (clientY - rect.top) / scale;
 
-    // Resize corner of selected photo? (all 4 corners)
+    // Resize handles of selected photo (corners + edges)
     if (selectedId !== null) {
       const sel = photos.find(p => p.id === selectedId);
       if (sel) {
-        const ph = Math.round(sel.w * (4/3));
-        const corners: { corner: Corner; x: number; y: number }[] = [
-          { corner: "tl", x: sel.x,          y: sel.y      },
-          { corner: "tr", x: sel.x + sel.w,   y: sel.y      },
-          { corner: "bl", x: sel.x,          y: sel.y + ph  },
-          { corner: "br", x: sel.x + sel.w,   y: sel.y + ph },
+        const ph = sel.h;
+        const mx = sel.x + sel.w / 2, my = sel.y + ph / 2;
+        const handles: { handle: Handle; x: number; y: number }[] = [
+          { handle: "tl", x: sel.x,        y: sel.y      },
+          { handle: "tr", x: sel.x + sel.w, y: sel.y      },
+          { handle: "bl", x: sel.x,        y: sel.y + ph  },
+          { handle: "br", x: sel.x + sel.w, y: sel.y + ph },
+          { handle: "t",  x: mx,            y: sel.y      },
+          { handle: "b",  x: mx,            y: sel.y + ph  },
+          { handle: "l",  x: sel.x,        y: my          },
+          { handle: "r",  x: sel.x + sel.w, y: my          },
         ];
-        for (const { corner, x: cx2, y: cy2 } of corners) {
-          if (Math.abs(cx - cx2) <= RESIZE_ZONE && Math.abs(cy - cy2) <= RESIZE_ZONE) {
-            dragRef.current = { type: "photo-resize", id: selectedId, mx: clientX, my: clientY, ow: sel.w, ox: sel.x, oy: sel.y, corner };
+        for (const { handle, x: hx, y: hy } of handles) {
+          if (Math.abs(cx - hx) <= RESIZE_ZONE && Math.abs(cy - hy) <= RESIZE_ZONE) {
+            dragRef.current = { type: "photo-resize", id: selectedId, mx: clientX, my: clientY, ow: sel.w, oh: sel.h, ox: sel.x, oy: sel.y, handle };
             return;
           }
         }
@@ -556,7 +556,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     // Hit-test photos (reverse = topmost first)
     for (let i = photos.length - 1; i >= 0; i--) {
       const p = photos[i];
-      const ph = Math.round(p.w * (4/3));
+      const ph = p.h;
       if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + ph) {
         setSelectedId(p.id);
         dragRef.current = { type: "photo-move", id: p.id, mx: clientX, my: clientY, ox: p.x, oy: p.y };
@@ -1051,7 +1051,7 @@ function ComcardPageInner() {
       if (d.fontWeight)    setFontWeight(d.fontWeight);
       if (d.statsLayout)   setStatsLayout(d.statsLayout);
       if (d.enabledFields) setEnabledFields(d.enabledFields);
-      if (d.photos)        setPhotos(d.photos);
+      if (d.photos)        setPhotos(d.photos.map((p: PhotoItem) => ({ ...p, h: p.h ?? Math.round(p.w * (4/3)) })));
       if (d.textBlocks)    setTextBlocks(d.textBlocks);
       if (d.photos)        nextIdRef.current = Math.max(...d.photos.map((p: PhotoItem) => p.id)) + 1;
       setStep("design");
@@ -1120,7 +1120,7 @@ function ComcardPageInner() {
       const x = last ? Math.min(last.x + last.w + 8, 320) : 16;
       const y = last ? last.y : 16;
       const id = nextIdRef.current++;
-      return [...prev, { id, src: null, x, y, w: baseW }];
+      return [...prev, { id, src: null, x, y, w: baseW, h: Math.round(baseW * (4/3)) }];
     });
   }, []);
 
