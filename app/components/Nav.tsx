@@ -20,6 +20,13 @@ export default function Nav() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // 스크롤하면 모바일 메뉴 닫기
+  useEffect(() => {
+    const close = () => setMenuOpen(false);
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, []);
+
   const signOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();

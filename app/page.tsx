@@ -41,8 +41,8 @@ export default async function Home() {
             Model Digital Portfolio
           </p>
           <h1 className="font-display" style={{
-            fontSize: "clamp(64px, 10vw, 120px)", fontWeight: 300, fontStyle: "italic",
-            lineHeight: 1.0, letterSpacing: "-0.02em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
+            fontSize: "clamp(36px, 10vw, 120px)", fontWeight: 300, fontStyle: "italic",
+            lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
           }}>
             모델의 첫인상을<br />완성하다
           </h1>
@@ -67,8 +67,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Gallery Preview */}
-      <section id="gallery" className="home-section-pad">
+      {/* Gallery Preview — 모델 없으면 섹션 자체 숨김 */}
+      {displayModels && <section id="gallery" className="home-section-pad">
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px", flexWrap: "wrap", gap: "16px" }}>
             <div>
@@ -86,17 +86,18 @@ export default async function Home() {
           </div>
 
           {displayModels ? (
-            <div className="home-gallery-grid">
+            <div className="home-gallery-grid" style={{ marginBottom: 0 }}>
               {displayModels.map((model) => {
                 const sizes = [model.chest, model.waist, model.hip].filter(Boolean).join(" / ");
                 return (
                   <Link key={model.id} href={`/model/${model.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                     <div style={{ cursor: "pointer" }}>
-                      <div style={{ aspectRatio: "2/3", overflow: "hidden", background: "var(--surface)" }}>
+                      <div style={{ aspectRatio: "2/3", overflow: "hidden", background: "var(--surface)", border: "1px solid var(--border)" }}>
                         {model.photo_url
                           ? <img src={model.photo_url} alt={model.eng_name ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <span style={{ fontSize: "11px", letterSpacing: "0.12em", color: "var(--muted)", textTransform: "uppercase" }}>No Photo</span>
+                          : <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                              <span style={{ fontSize: "24px", color: "var(--border)" }}>◈</span>
+                              <span style={{ fontSize: "10px", letterSpacing: "0.12em", color: "var(--muted)", textTransform: "uppercase" }}>No Photo</span>
                             </div>
                         }
                       </div>
@@ -118,19 +119,14 @@ export default async function Home() {
                 );
               })}
             </div>
-          ) : (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
-              <p style={{ fontSize: "14px", marginBottom: "8px" }}>아직 등록된 모델이 없어요</p>
-              <p style={{ fontSize: "12px" }}>마이페이지에서 갤러리 공개를 켜면 여기에 표시돼요</p>
-            </div>
-          )}
+          ) : null}
         </div>
-      </section>
+      </section>}
 
       {/* Features */}
       <section id="features" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "72px" }}>
+          <div style={{ textAlign: "center", marginBottom: "72px" }} className="home-features-title-gap">
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "12px" }}>Features</p>
             <h2 className="font-display" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontWeight: 300, fontStyle: "italic", lineHeight: 1.1 }}>
               Everything you need, in one place

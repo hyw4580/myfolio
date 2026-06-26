@@ -212,9 +212,10 @@ button:focus {
 .home-footer-links { display: flex; gap: 36px; }
 
 @media (max-width: 768px) {
-  .home-section-pad { padding: 56px 20px; }
+  .home-section-pad { padding: 48px 20px; }
   .home-gallery-grid { grid-template-columns: repeat(2, 1fr); }
   .home-features-grid { grid-template-columns: 1fr; border-left: none; }
+  .home-features-title-gap { margin-bottom: 36px !important; }
   .home-cta-grid { grid-template-columns: 1fr; gap: 40px; }
   .home-cta-img { display: none; }
   .home-footer { flex-direction: column; gap: 20px; padding: 32px 20px; text-align: center; }
