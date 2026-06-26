@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "../components/Nav";
@@ -8,41 +8,6 @@ import type { User } from "@supabase/supabase-js";
 
 type CompCard = { id: string; title: string; canvas_type: string; created_at: string; };
 
-function YearPicker({ value, onChange, inputStyle }: { value: number | null; onChange: (y: number) => void; inputStyle: React.CSSProperties }) {
-  const currentYear = new Date().getFullYear();
-  const defaultYear = currentYear - 20;
-  const selectedYear = value ?? defaultYear;
-  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const item = el.querySelector(`[data-year="${selectedYear}"]`) as HTMLElement | null;
-    if (item) item.scrollIntoView({ block: "center" });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div ref={scrollRef} style={{ ...inputStyle, padding: 0, height: 160, overflowY: "scroll", cursor: "default" }}>
-      {years.map(y => (
-        <div
-          key={y}
-          data-year={y}
-          onClick={() => onChange(y)}
-          style={{
-            padding: "9px 14px", fontSize: "14px", cursor: "pointer",
-            background: y === selectedYear ? "var(--text)" : "transparent",
-            color: y === selectedYear ? "#fff" : "var(--text)",
-            userSelect: "none",
-          }}
-        >
-          {y}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 type Profile = {
   id: string;
@@ -286,10 +251,19 @@ export default function MyPage() {
               </select>
             </div>
 
-            {/* 출생연도 — 고정 높이 스크롤 피커 */}
+            {/* 출생연도 */}
             <div>
               <label style={labelStyle}>출생연도</label>
-              <YearPicker value={profile.birth_year} onChange={y => update("birth_year", y)} inputStyle={inputStyle} />
+              <select
+                style={{ ...inputStyle, cursor: "pointer" }}
+                value={profile.birth_year ?? ""}
+                onChange={e => update("birth_year", Number(e.target.value))}
+              >
+                <option value="">— Select —</option>
+                {Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
 
             {/* 나머지 필드 */}
