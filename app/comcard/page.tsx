@@ -574,10 +574,14 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         return (
           <div className="crop-guide" style={{
             position: "absolute",
-            top: mm2px, right: mm2px, bottom: mm2px, left: mm2px,
+            top: mm2px,
+            left: mm2px,
+            width: w - mm2px * 2,
+            height: h - mm2px * 2,
             border: "0.5px dashed rgba(180,0,0,0.5)",
             pointerEvents: "none",
             zIndex: 100,
+            boxSizing: "border-box",
           }} />
         );
       })()}
