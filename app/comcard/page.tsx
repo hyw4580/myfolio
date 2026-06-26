@@ -224,9 +224,13 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const canvasTypeRef  = useRef(canvas);
   const textBlocksRef  = useRef(textBlocks);
   const textSizesRef   = useRef<Record<string, { w: number; h: number }>>({});
+  const selectedIdRef  = useRef(selectedId);
+  const scaleRefOuter  = useRef(scale);
   photosRef.current      = photos;
   canvasTypeRef.current  = canvas;
   textBlocksRef.current  = textBlocks;
+  selectedIdRef.current  = selectedId;
+  scaleRefOuter.current  = scale;
 
   const handleTextSize = useCallback((id: string, w: number, h: number) => {
     textSizesRef.current[id] = { w, h };
@@ -234,6 +238,45 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
 
   const { w, h } = CANVAS[canvas];
   const subColor  = bgColor === "#0C0C0C" ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
+
+  // 사진/핸들 위에서만 scroll 차단 — 배경 터치 시 페이지 스크롤 허용
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const handler = (e: TouchEvent) => {
+      const rect = el.getBoundingClientRect();
+      const t = e.touches[0];
+      const s = scaleRefOuter.current;
+      const cx = (t.clientX - rect.left) / s;
+      const cy = (t.clientY - rect.top) / s;
+      const curPhotos = photosRef.current;
+      const curSel = selectedIdRef.current;
+      // 리사이즈 핸들 체크
+      if (curSel !== null) {
+        const sel = curPhotos.find(p => p.id === curSel);
+        if (sel) {
+          const ph = Math.round(sel.w * 1.5);
+          const corners = [
+            { x: sel.x, y: sel.y }, { x: sel.x + sel.w, y: sel.y },
+            { x: sel.x, y: sel.y + ph }, { x: sel.x + sel.w, y: sel.y + ph },
+          ];
+          if (corners.some(c => Math.abs(cx - c.x) <= 20 && Math.abs(cy - c.y) <= 20)) {
+            e.preventDefault(); return;
+          }
+        }
+      }
+      // 사진 영역 체크
+      for (let i = curPhotos.length - 1; i >= 0; i--) {
+        const p = curPhotos[i];
+        if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + Math.round(p.w * 1.5)) {
+          e.preventDefault(); return;
+        }
+      }
+      // 배경 터치 → preventDefault 없음 → 페이지 스크롤 허용
+    };
+    el.addEventListener("touchstart", handler, { passive: false });
+    return () => el.removeEventListener("touchstart", handler);
+  }, []);
 
   useEffect(() => {
     const scaleRef = { current: scale };
@@ -517,8 +560,8 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
     <div
       ref={canvasRef}
       onMouseDown={handleCanvasPointerDown}
-      onTouchStart={(e) => { e.preventDefault(); handleCanvasPointerDown(e); }}
-      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})`, touchAction: "none" }}
+      onTouchStart={(e) => { handleCanvasPointerDown(e); }}
+      style={{ position: "relative", width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "hidden", transformOrigin: "top left", transform: `scale(${scale})` }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (

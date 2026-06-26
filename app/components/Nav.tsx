@@ -20,12 +20,15 @@ export default function Nav() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 스크롤하면 모바일 메뉴 닫기
+  // 스크롤 또는 페이지 이동 시 모바일 메뉴 닫기
   useEffect(() => {
     const close = () => setMenuOpen(false);
     window.addEventListener("scroll", close, { passive: true });
     return () => window.removeEventListener("scroll", close);
   }, []);
+
+  // pathname 변경 시 메뉴 닫기
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const signOut = async () => {
     const supabase = createClient();
