@@ -1276,15 +1276,8 @@ function ComcardPageInner() {
                 canvasRef={canvasRef}
                 scale={canvasScale * userZoom}
               />
-              <div style={{ display: "flex", gap: "10px", marginTop: "24px", width: w * canvasScale * userZoom, flexWrap: "wrap" }}>
-                <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, minWidth: "120px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
-                  {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
-                </button>
-                <button onClick={saveImage} style={{ flex: 1, minWidth: "100px", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
-                <button onClick={downloadPDF} style={{ flex: 1, minWidth: "120px", background: "var(--text)", color: "#fff", border: "none", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
-              </div>
             </main>
-            {/* 컨트롤 사이드바 (데스크탑: 좌측 / 모바일: 캔버스 아래 full-width) */}
+            {/* 컨트롤 사이드바 */}
             <aside className="comcard-sidebar">
               <div style={{ marginBottom: "20px", paddingBottom: "16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button onClick={() => setStep("fields")} style={{ fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", border: "none", background: "none", color: "var(--muted)", cursor: "pointer" }}>← Back</button>
@@ -1301,6 +1294,17 @@ function ComcardPageInner() {
                 statsLayout={statsLayout} setStatsLayout={setStatsLayout}
               />
             </aside>
+          </div>
+        )}
+
+        {/* 저장 / 다운로드 버튼 — 항상 하단 고정 */}
+        {step === "design" && (
+          <div style={{ display: "flex", gap: "0", borderTop: "1px solid var(--border)", background: "#fff" }}>
+            <button onClick={saveCard} disabled={cardSaving} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "none", borderRight: "1px solid var(--border)", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
+              {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
+            </button>
+            <button onClick={saveImage} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "none", borderRight: "1px solid var(--border)", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Save Image</button>
+            <button onClick={downloadPDF} style={{ flex: 1, background: "var(--text)", color: "#fff", border: "none", padding: "16px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>Download PDF</button>
           </div>
         )}
       </div>
