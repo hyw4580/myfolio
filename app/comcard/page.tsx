@@ -1168,7 +1168,7 @@ function ComcardPageInner() {
     const update = () => {
       const el = mainAreaRef.current;
       if (!el) return;
-      const padding = window.innerWidth <= 768 ? 32 : 48;
+      const padding = window.innerWidth <= 768 ? 56 : 48;
       const available = el.clientWidth - padding;
       setCanvasScale(Math.min(1, available / w));
     };
@@ -1292,7 +1292,7 @@ function ComcardPageInner() {
         {step === "design" && (
           <div className="comcard-design-layout">
             {/* 캔버스 영역 */}
-            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", background: "#EBEBEB" }}>
+            <main ref={mainAreaRef} className="comcard-canvas-main" style={{ flex: 1, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "40px 24px 60px", overflow: "auto", overflowX: "hidden", background: "#EBEBEB" }}>
               <div ref={canvasZoomWrapRef} style={{ transform: "scale(1)", transformOrigin: "center top", flexShrink: 0 }}>
                 <CanvasEditor
                   canvas={canvas} bgColor={bgColor} txtColor={txtColor} fontWeight={fontWeight}
