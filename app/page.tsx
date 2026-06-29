@@ -171,8 +171,8 @@ export default async function Home() {
       <section className="home-section-pad">
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
         <div className="home-cta-grid">
-          <div className="home-cta-img" style={{ height: "560px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "64px", color: "var(--border)" }}>◈</span>
+          <div className="home-cta-img" style={{ aspectRatio: "3/4", overflow: "hidden" }}>
+            <img src="/model.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
           <div>
             <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>
