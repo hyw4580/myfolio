@@ -9,6 +9,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/comcard";
   const error = searchParams.get("error");
+  const errorMsg = searchParams.get("msg");
   const t = useT();
 
   const supabase = createClient();
@@ -59,6 +60,7 @@ function LoginContent() {
             fontSize: "13px", color: "#c00", textAlign: "center",
           }}>
             {t.login.error}
+            {errorMsg && <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.7 }}>{errorMsg}</div>}
           </div>
         )}
 
