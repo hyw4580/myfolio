@@ -73,13 +73,17 @@ export default function PortfolioContent({ userId, gallery, snaps, compCards, vi
   const [active, setActive]     = useState<Tab>("gallery");
   const [lightbox, setLightbox] = useState<{ src: string; isVideo: boolean } | null>(null);
   const [viewportH, setViewportH] = useState(700);
+  const [viewportW, setViewportW] = useState(1100);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setViewportH(window.innerHeight);
-    const onResize = () => setViewportH(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const update = () => {
+      setViewportH(window.innerHeight);
+      setViewportW(window.innerWidth);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
   useEffect(() => {
@@ -114,6 +118,7 @@ export default function PortfolioContent({ userId, gallery, snaps, compCards, vi
 
   const featuredCard = compCards[0];
   const cardMaxH = viewportH - 200;
+  const cardMaxW = Math.min(1100, viewportW - 40); // 콘텐츠 영역 좌우 패딩 40px
 
   return (
     <>
@@ -169,7 +174,7 @@ export default function PortfolioContent({ userId, gallery, snaps, compCards, vi
                   <CompCardCanvas
                     canvasType={featuredCard.canvas_type}
                     data={featuredCard.data}
-                    maxWidth={1100}
+                    maxWidth={cardMaxW}
                     maxHeight={cardMaxH}
                   />
                 </div>
