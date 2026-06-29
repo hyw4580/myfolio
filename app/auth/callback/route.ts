@@ -16,5 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth&msg=${encodeURIComponent(error.message)}`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth&msg=no_code`);
+  const oauthError = searchParams.get("error_description") ?? searchParams.get("error") ?? "no_code";
+  console.error("[auth/callback] no code. params:", request.url);
+  return NextResponse.redirect(`${origin}/login?error=auth&msg=${encodeURIComponent(oauthError)}`);
 }
