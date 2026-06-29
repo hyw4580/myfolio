@@ -1059,12 +1059,14 @@ function ComcardPageInner() {
       if (d.photos)        setPhotos(d.photos.map((p: PhotoItem) => ({ ...p, h: p.h ?? Math.round(p.w * (4/3)) })));
       if (d.textBlocks)    setTextBlocks(d.textBlocks);
       if (d.photos)        nextIdRef.current = Math.max(...d.photos.map((p: PhotoItem) => p.id)) + 1;
+      if (data.title)      setCardTitle(data.title);
       setStep("design");
     })();
   }, [editId]);
 
   const [cardSaving, setCardSaving] = useState(false);
   const [cardSaved,  setCardSaved]  = useState(false);
+  const [cardTitle,  setCardTitle]  = useState("내 컴카드");
 
   const saveCard = async () => {
     const supabase = createClient();
@@ -1074,10 +1076,10 @@ function ComcardPageInner() {
     const cardData = { bgColor, txtColor, fontWeight, statsLayout, enabledFields, fields: selectedData, photos, textBlocks };
     if (editIdRef.current) {
       // 기존 카드 업데이트
-      await supabase.from("comp_cards").update({ canvas_type: canvas, data: cardData, updated_at: new Date().toISOString() }).eq("id", editIdRef.current);
+      await supabase.from("comp_cards").update({ canvas_type: canvas, title: cardTitle, data: cardData, updated_at: new Date().toISOString() }).eq("id", editIdRef.current);
     } else {
       // 새 카드 저장
-      const { data } = await supabase.from("comp_cards").insert({ user_id: user.id, title: "내 컴카드", canvas_type: canvas, data: cardData }).select("id").single();
+      const { data } = await supabase.from("comp_cards").insert({ user_id: user.id, title: cardTitle, canvas_type: canvas, data: cardData }).select("id").single();
       if (data) editIdRef.current = data.id; // 이후 저장은 update로
     }
     setCardSaving(false);
@@ -1324,6 +1326,12 @@ function ComcardPageInner() {
               />
               {/* 저장 / 다운로드 버튼 */}
               <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <input
+                  value={cardTitle}
+                  onChange={e => setCardTitle(e.target.value)}
+                  placeholder="컴카드 이름"
+                  style={{ width: "100%", border: "1px solid var(--border)", padding: "10px 12px", fontSize: "12px", fontFamily: "var(--font-inter), sans-serif", outline: "none", boxSizing: "border-box" }}
+                />
                 <button onClick={saveCard} disabled={cardSaving} style={{ width: "100%", background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "13px", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }}>
                   {cardSaved ? "저장됨 ✓" : cardSaving ? "저장 중..." : "마이페이지에 저장"}
                 </button>
