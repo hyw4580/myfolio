@@ -100,7 +100,11 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
     if (error) { alert(`영상 업로드 실패: ${error.message}`); }
     else {
       const { data: { publicUrl } } = supabase.storage.from("videos").getPublicUrl(path);
-      setVideos(prev => [...prev, publicUrl]);
+      setVideos(prev => {
+        const next = [...prev, publicUrl];
+        supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
+        return next;
+      });
     }
     setVidUploading(false);
   };
@@ -108,7 +112,11 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
   const addVideoUrl = () => {
     const v = videoInput.trim();
     if (!v) return;
-    setVideos(prev => [...prev, v]);
+    setVideos(prev => {
+      const next = [...prev, v];
+      supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
+      return next;
+    });
     setVideoInput("");
   };
 
