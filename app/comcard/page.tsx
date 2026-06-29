@@ -1088,14 +1088,21 @@ function ComcardPageInner() {
   const captureCanvas = async () => {
     if (!canvasRef.current) return null;
     const el = canvasRef.current;
+    const { w, h } = CANVAS[canvas];
     const { default: html2canvas } = await import("html2canvas");
     return html2canvas(el, {
       useCORS: true,
       scale: 2,
+      width: w,
+      height: h,
       ignoreElements: (e) => e.classList.contains("crop-guide"),
       onclone: (_doc, clone) => {
-        clone.style.transform = "scale(1)";
+        // 캔버스 자신의 scale transform 제거
+        clone.style.transform = "none";
         clone.style.overflow = "hidden";
+        // 부모 zoom wrapper transform도 제거
+        let p = clone.parentElement;
+        while (p) { p.style.transform = "none"; p = p.parentElement; }
       },
     });
   };
