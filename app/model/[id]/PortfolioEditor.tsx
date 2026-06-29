@@ -422,7 +422,11 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
                     {videos.map((url, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 12px", border: "1px solid #eee" }}>
                         <span style={{ flex: 1, fontSize: "12px", color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{url}</span>
-                        <button onClick={() => setVideos(prev => prev.filter((_, idx) => idx !== i))}
+                        <button onClick={async () => {
+                          const next = videos.filter((_, idx) => idx !== i);
+                          setVideos(next);
+                          await supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
+                        }}
                           style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: "16px", lineHeight: 1 }}>×</button>
                       </div>
                     ))}

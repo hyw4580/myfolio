@@ -1,6 +1,6 @@
 "use client";
 
-type PhotoItem  = { id: number; src: string | null; x: number; y: number; w: number };
+type PhotoItem  = { id: number; src: string | null; x: number; y: number; w: number; h?: number };
 type TextBlock  = { id: string; tag: "name" | "korName" | "stats" | "contact"; x: number; y: number; fontSize: number };
 type Field      = { label: string; value: string };
 
@@ -19,21 +19,23 @@ const CANVAS = {
   landscape: { w: 680, h: 480 },
 };
 
-export default function CompCardCanvas({ canvasType, data, maxWidth = 900 }: {
+export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHeight }: {
   canvasType: string;
   data: CardData;
   maxWidth?: number;
+  maxHeight?: number;
 }) {
   const cv = CANVAS[canvasType as keyof typeof CANVAS] ?? CANVAS.landscape;
-  const scale = maxWidth / cv.w;
+  let scale = maxWidth / cv.w;
+  if (maxHeight && maxHeight > 0) scale = Math.min(scale, maxHeight / cv.h);
 
-  const bgColor    = data.bgColor    ?? "#fff";
-  const txtColor   = data.txtColor   ?? "#111";
-  const fontWeight = data.fontWeight ?? 400;
+  const bgColor     = data.bgColor    ?? "#fff";
+  const txtColor    = data.txtColor   ?? "#111";
+  const fontWeight  = data.fontWeight ?? 400;
   const statsLayout = data.statsLayout ?? "1단";
-  const photos     = data.photos     ?? [];
-  const textBlocks = data.textBlocks ?? [];
-  const fields     = data.enabledFields ?? [];
+  const photos      = data.photos     ?? [];
+  const textBlocks  = data.textBlocks ?? [];
+  const fields      = data.enabledFields ?? [];
 
   const statsFields   = fields.filter(d => !["English Name","Korean Name","Instagram","Email","Phone"].includes(d.label));
   const contactFields = fields.filter(d => ["Instagram","Email","Phone"].includes(d.label));
@@ -46,25 +48,28 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900 }: {
   const contactBlock = textBlocks.find(b => b.tag === "contact");
 
   return (
-    <div style={{ width: cv.w * scale, height: cv.h * scale, overflow: "hidden" }}>
+    <div style={{ width: cv.w * scale, height: cv.h * scale, overflow: "hidden", flexShrink: 0 }}>
       <div style={{
         position: "relative", width: cv.w, height: cv.h,
         background: bgColor, overflow: "hidden",
         transformOrigin: "top left", transform: `scale(${scale})`,
       }}>
         {/* Photos */}
-        {photos.map(item => (
-          <div key={item.id} style={{
-            position: "absolute", left: item.x, top: item.y,
-            width: item.w, height: Math.round(item.w * 1.5),
-            overflow: "hidden", background: "#e8e8e8",
-          }}>
-            {item.src
-              ? <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              : <div style={{ width: "100%", height: "100%", background: "#e0e0e0" }} />
-            }
-          </div>
-        ))}
+        {photos.map(item => {
+          const ph = item.h ?? Math.round(item.w * (4 / 3));
+          return (
+            <div key={item.id} style={{
+              position: "absolute", left: item.x, top: item.y,
+              width: item.w, height: ph,
+              overflow: "hidden", background: "#e8e8e8",
+            }}>
+              {item.src
+                ? <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                : <div style={{ width: "100%", height: "100%", background: "#e0e0e0" }} />
+              }
+            </div>
+          );
+        })}
 
         {/* English Name */}
         {nameField && nameBlock && (

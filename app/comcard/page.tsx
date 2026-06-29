@@ -217,7 +217,7 @@ function TextElement({ block, children, onMoveStart, onSize }: {
 /* ─────────────── canvas editor ─────────────────────────────── */
 const RESIZE_ZONE = 22;
 
-function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos, textBlocks, setTextBlocks, selectedFields, statsLayout, onPhotoResize, canvasRef, scale }: {
+function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos, textBlocks, setTextBlocks, selectedFields, statsLayout, onPhotoResize, canvasRef, scale, userZoomRef }: {
   canvas: CanvasType; bgColor: string; txtColor: string; fontWeight: number;
   photos: PhotoItem[]; setPhotos: React.Dispatch<React.SetStateAction<PhotoItem[]>>;
   textBlocks: TextBlock[]; setTextBlocks: React.Dispatch<React.SetStateAction<TextBlock[]>>;
@@ -226,6 +226,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   onPhotoResize: (w: number) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   scale: number;
+  userZoomRef: React.RefObject<number>;
 }) {
   const [selectedId, setSelectedId]   = useState<number | null>(null);
   const [snapLines, setSnapLines]     = useState<SnapLines>({ xs: [], ys: [] });
@@ -297,7 +298,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
       if (!d) return; // 드래그 중이 아니면 스크롤 허용
       if (e.cancelable) e.preventDefault();
       const { clientX, clientY } = getClientPos(e);
-      const s = scaleRef.current;
+      const s = scaleRef.current * (userZoomRef.current ?? 1);
 
       if (d.type === "photo-move") {
         const prev    = photosRef.current;
@@ -311,15 +312,14 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         const snapXs: number[] = [];
         const snapYs: number[] = [];
 
-        // 칼선 2mm — 먼저 체크, 더 넓은 임계값(SNAP*4)으로 우선 흡착
+        // 안전 영역 스냅 (칼선) — 일반 스냅과 동일 임계값으로 가볍게
         const m = (cv.w > cv.h ? cv.w / 297 : cv.w / 210) * 2;
-        const CROP_SNAP = SNAP * 4;
-        if (Math.abs(nx - m) < CROP_SNAP)                        { nx = m;              snapXs.push(m); }
-        else if (Math.abs(nx + moving.w - (cv.w - m)) < CROP_SNAP) { nx = cv.w - m - moving.w; snapXs.push(cv.w - m); }
-        if (Math.abs(ny - m) < CROP_SNAP)                        { ny = m;              snapYs.push(m); }
-        else if (Math.abs(ny + ph - (cv.h - m)) < CROP_SNAP)     { ny = cv.h - m - ph; snapYs.push(cv.h - m); }
+        if (Math.abs(nx - m) < SNAP)                             { nx = m;                  snapXs.push(m); }
+        else if (Math.abs(nx + moving.w - (cv.w - m)) < SNAP)   { nx = cv.w - m - moving.w; snapXs.push(cv.w - m); }
+        if (Math.abs(ny - m) < SNAP)                             { ny = m;                  snapYs.push(m); }
+        else if (Math.abs(ny + ph - (cv.h - m)) < SNAP)         { ny = cv.h - m - ph;       snapYs.push(cv.h - m); }
 
-        // Canvas edge snaps (칼선 스냅 안 됐을 때만)
+        // Canvas edge snaps
         if (!snapXs.length) {
           if      (Math.abs(nx) < SNAP)                        { nx = 0;              snapXs.push(0); }
           else if (Math.abs(nx + moving.w - cv.w) < SNAP)     { nx = cv.w - moving.w; snapXs.push(cv.w); }
@@ -328,10 +328,6 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
           if      (Math.abs(ny) < SNAP)                        { ny = 0;              snapYs.push(0); }
           else if (Math.abs(ny + ph - cv.h) < SNAP)           { ny = cv.h - ph;      snapYs.push(cv.h); }
         }
-        // Canvas center snaps
-        const midX = cv.w / 2, midY = cv.h / 2;
-        if (!snapXs.length && Math.abs(nx + moving.w / 2 - midX) < SNAP) { nx = midX - moving.w / 2; snapXs.push(midX); }
-        if (!snapYs.length && Math.abs(ny + ph / 2 - midY) < SNAP)       { ny = midY - ph / 2; snapYs.push(midY); }
 
         // Other photo edge snaps
         for (const other of prev) {
@@ -532,8 +528,9 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
   const handleCanvasPointerDown = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const { clientX, clientY } = getClientPos(e);
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    const cx = (clientX - rect.left) / scale;
-    const cy = (clientY - rect.top) / scale;
+    const effectiveScale = scale * (userZoomRef.current ?? 1);
+    const cx = (clientX - rect.left) / effectiveScale;
+    const cy = (clientY - rect.top) / effectiveScale;
 
     // Resize handles of selected photo (corners + edges)
     if (selectedId !== null) {
@@ -595,7 +592,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
         <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} />
       ))}
 
-      {/* 2mm 칼선 (재단선) — 인쇄 시 재단될 영역 표시 */}
+      {/* 안전 영역 가이드 — 저장/출력 시 제외되는 표시용 선 */}
       {(() => {
         const mm2px = (w > h ? w / 297 : w / 210) * 2; // 2mm in canvas px
         return (
@@ -605,7 +602,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, photos, setPhotos
             left: mm2px,
             width: w - mm2px * 2,
             height: h - mm2px * 2,
-            border: "0.5px dashed rgba(180,0,0,0.5)",
+            border: "0.5px dotted rgba(255,255,255,0.35)",
             pointerEvents: "none",
             zIndex: 100,
             boxSizing: "border-box",
@@ -1088,13 +1085,24 @@ function ComcardPageInner() {
     setTimeout(() => setCardSaved(false), 2500);
   };
 
-  const saveImage = async () => {
-    if (!canvasRef.current) return;
+  const captureCanvas = async () => {
+    if (!canvasRef.current) return null;
     const el = canvasRef.current;
-    el.style.overflow = "hidden";
     const { default: html2canvas } = await import("html2canvas");
-    const c = await html2canvas(el, { useCORS: true, scale: 2, ignoreElements: (e) => e.classList.contains("crop-guide") });
-    el.style.overflow = "visible";
+    return html2canvas(el, {
+      useCORS: true,
+      scale: 2,
+      ignoreElements: (e) => e.classList.contains("crop-guide"),
+      onclone: (_doc, clone) => {
+        clone.style.transform = "scale(1)";
+        clone.style.overflow = "hidden";
+      },
+    });
+  };
+
+  const saveImage = async () => {
+    const c = await captureCanvas();
+    if (!c) return;
     const a = document.createElement("a");
     a.href = c.toDataURL("image/png");
     a.download = "myfolio-comcard.png";
@@ -1102,12 +1110,9 @@ function ComcardPageInner() {
   };
 
   const downloadPDF = async () => {
-    if (!canvasRef.current) return;
-    const el = canvasRef.current;
-    el.style.overflow = "hidden";
-    const { default: html2canvas } = await import("html2canvas");
+    const c = await captureCanvas();
+    if (!c) return;
     const { default: jsPDF } = await import("jspdf");
-    const c = await html2canvas(el, { useCORS: true, scale: 2, ignoreElements: (e) => e.classList.contains("crop-guide") });
     const imgData = c.toDataURL("image/png");
     const { w, h } = CANVAS[canvas];
     const orientation = w > h ? "landscape" : "portrait";
@@ -1116,12 +1121,11 @@ function ComcardPageInner() {
     const ph = pdf.internal.pageSize.getHeight();
     pdf.addImage(imgData, "PNG", 0, 0, pw, ph);
     pdf.save("myfolio-comcard.pdf");
-    el.style.overflow = "visible";
   };
 
   const addPhoto = useCallback(() => {
     setPhotos(prev => {
-      if (prev.length >= 6) return prev;
+      if (prev.length >= 10) return prev;
       // Use last manually resized width, else match last photo, else default
       const baseW = lastResizedWRef.current ?? prev[prev.length - 1]?.w ?? prev[0]?.w ?? 160;
       const last  = prev[prev.length - 1];
@@ -1291,6 +1295,7 @@ function ComcardPageInner() {
                   onPhotoResize={(canvasW) => { lastResizedWRef.current = canvasW; }}
                   canvasRef={canvasRef}
                   scale={canvasScale}
+                  userZoomRef={userZoomRef}
                 />
               </div>
             </main>
