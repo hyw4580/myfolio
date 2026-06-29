@@ -4,6 +4,14 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // ── Locale detection ──────────────────────────────────────────
+  if (!request.cookies.get('locale')) {
+    const lang = request.headers.get('accept-language') ?? '';
+    const locale = lang.startsWith('ko') ? 'ko' : lang.startsWith('ru') ? 'ru' : 'en';
+    supabaseResponse.cookies.set('locale', locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+  }
+
+  // ── Supabase auth ─────────────────────────────────────────────
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,6 +21,12 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
+          // Re-apply locale cookie after supabaseResponse is recreated
+          if (!request.cookies.get('locale')) {
+            const lang = request.headers.get('accept-language') ?? '';
+            const locale = lang.startsWith('ko') ? 'ko' : lang.startsWith('ru') ? 'ru' : 'en';
+            supabaseResponse.cookies.set('locale', locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+          }
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -42,5 +56,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/comcard/:path*", "/mypage/:path*", "/login"],
+  matcher: [
+    "/((?!_next|api|favicon).*)",
+  ],
 };

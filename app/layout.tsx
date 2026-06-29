@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Bodoni_Moda, Inter, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
+import { getLocale } from "@/lib/i18n";
+import { LocaleProvider } from "./components/LocaleProvider";
 
 const cormorant = Bodoni_Moda({
   subsets: ["latin"],
@@ -30,14 +32,18 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
-    <html lang="ko" className={`${cormorant.variable} ${inter.variable} ${notoSerifKR.variable}`}>
-      <body>{children}</body>
+    <html lang={locale} className={`${cormorant.variable} ${inter.variable} ${notoSerifKR.variable}`}>
+      <body>
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

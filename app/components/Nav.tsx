@@ -4,12 +4,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { useT } from "./LocaleProvider";
 
 export default function Nav() {
   const pathname = usePathname();
   const router   = useRouter();
   const [user, setUser]       = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     const supabase = createClient();
@@ -60,21 +62,21 @@ export default function Nav() {
 
         {/* 데스크탑 메뉴 */}
         <div className="nav-desktop" style={{ display: "flex", gap: "40px", alignItems: "center" }}>
-          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}>Gallery</Link>
-          <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}>Comp Card</Link>
-          <Link href="/#contact" style={linkStyle()}>Contact</Link>
+          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}>{t.nav.gallery}</Link>
+          <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}>{t.nav.compCard}</Link>
+          <Link href="/#contact" style={linkStyle()}>{t.nav.contact}</Link>
           {user ? (
             <>
-              <Link href="/mypage" style={linkStyle(pathname === "/mypage")}>My Page</Link>
-              <button onClick={signOut} style={{ ...linkStyle(), background: "none", border: "none", cursor: "pointer", padding: 0 }}>Logout</button>
+              <Link href="/mypage" style={linkStyle(pathname === "/mypage")}>{t.nav.myPage}</Link>
+              <button onClick={signOut} style={{ ...linkStyle(), background: "none", border: "none", cursor: "pointer", padding: 0 }}>{t.nav.logout}</button>
             </>
           ) : (
-            <Link href="/login" style={linkStyle()}>Login</Link>
+            <Link href="/login" style={linkStyle()}>{t.nav.login}</Link>
           )}
           <Link href="/comcard" style={{
             fontSize: "12px", letterSpacing: "0.12em", textTransform: "uppercase",
             color: "#fff", textDecoration: "none", background: "var(--text)", padding: "12px 24px",
-          }}>Get Started</Link>
+          }}>{t.nav.getStarted}</Link>
         </div>
 
         {/* 모바일 햄버거 */}
@@ -98,21 +100,21 @@ export default function Nav() {
           display: "flex", flexDirection: "column", padding: "16px 24px 24px",
           gap: "20px",
         }}>
-          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}  onClick={() => setMenuOpen(false)}>Gallery</Link>
-          <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}  onClick={() => setMenuOpen(false)}>Comp Card</Link>
-          <Link href="/#contact" style={linkStyle()}                         onClick={() => setMenuOpen(false)}>Contact</Link>
+          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}  onClick={() => setMenuOpen(false)}>{t.nav.gallery}</Link>
+          <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}  onClick={() => setMenuOpen(false)}>{t.nav.compCard}</Link>
+          <Link href="/#contact" style={linkStyle()}                         onClick={() => setMenuOpen(false)}>{t.nav.contact}</Link>
           {user ? (
             <>
-              <Link href="/mypage" style={linkStyle(pathname === "/mypage")} onClick={() => setMenuOpen(false)}>My Page</Link>
-              <button onClick={() => { setMenuOpen(false); signOut(); }} style={{ ...linkStyle(), background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>Logout</button>
+              <Link href="/mypage" style={linkStyle(pathname === "/mypage")} onClick={() => setMenuOpen(false)}>{t.nav.myPage}</Link>
+              <button onClick={() => { setMenuOpen(false); signOut(); }} style={{ ...linkStyle(), background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>{t.nav.logout}</button>
             </>
           ) : (
-            <Link href="/login" style={linkStyle()} onClick={() => setMenuOpen(false)}>Login</Link>
+            <Link href="/login" style={linkStyle()} onClick={() => setMenuOpen(false)}>{t.nav.login}</Link>
           )}
           <Link href="/comcard" style={{
             fontSize: "12px", letterSpacing: "0.12em", textTransform: "uppercase",
             color: "#fff", textDecoration: "none", background: "var(--text)", padding: "12px 16px", display: "inline-block", alignSelf: "flex-start",
-          }} onClick={() => setMenuOpen(false)}>Get Started</Link>
+          }} onClick={() => setMenuOpen(false)}>{t.nav.getStarted}</Link>
         </div>
       )}
     </>

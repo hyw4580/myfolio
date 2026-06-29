@@ -4,12 +4,14 @@ import Link from "next/link";
 import Nav from "../components/Nav";
 import NumberScroll from "../components/NumberScroll";
 import CountryCodeSelect from "../components/CountryCodeSelect";
+import { useT } from "../components/LocaleProvider";
 
 const steps = ["Account", "Profile", "Measurements"];
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [countryDial, setCountryDial] = useState("+82");
+  const t = useT();
 
   const [account, setAccount] = useState({
     name: "", engName: "", email: "", password: "", phone: "", instagram: "",
@@ -52,10 +54,12 @@ export default function SignupPage() {
             myfolio
           </p>
           <h1 className="font-display" style={{ fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "24px" }}>
-            나만의 포트폴리오를<br />시작하세요
+            {t.signup.tagline.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+            ))}
           </h1>
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, maxWidth: "360px" }}>
-            정보를 한 번만 입력하면 컴카드를 만들 때 원하는 항목만 골라 쓸 수 있어요.
+            {t.signup.taglineSub}
           </p>
 
           <div style={{ marginTop: "60px", display: "flex", flexDirection: "column", gap: "0", borderTop: "1px solid var(--border)" }}>
@@ -77,8 +81,8 @@ export default function SignupPage() {
           </div>
 
           <p style={{ marginTop: "40px", fontSize: "13px", color: "var(--muted)" }}>
-            이미 계정이 있으신가요?{" "}
-            <Link href="#" style={{ color: "var(--text)", textDecoration: "underline" }}>로그인</Link>
+            {t.signup.alreadyHaveAccount}{" "}
+            <Link href="#" style={{ color: "var(--text)", textDecoration: "underline" }}>{t.signup.loginLink}</Link>
           </p>
         </div>
 
@@ -89,9 +93,9 @@ export default function SignupPage() {
           {step === 1 && (
             <div>
               <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
-                계정 정보
+                {t.signup.steps.account}
               </h2>
-              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>로그인에 사용할 기본 정보를 입력해주세요.</p>
+              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>{t.signup.steps.accountSub}</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -115,7 +119,7 @@ export default function SignupPage() {
 
                 <div>
                   <label style={labelStyle}>Password</label>
-                  <input style={inputStyle} type="password" placeholder="8자 이상" value={account.password}
+                  <input style={inputStyle} type="password" placeholder={t.signup.passwordPlaceholder} value={account.password}
                     onChange={e => setAccount(p => ({ ...p, password: e.target.value }))} />
                 </div>
 
@@ -140,7 +144,7 @@ export default function SignupPage() {
                 border: "none", padding: "16px", fontSize: "12px",
                 letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer",
               }}>
-                Next →
+                {t.signup.next} →
               </button>
             </div>
           )}
@@ -149,9 +153,9 @@ export default function SignupPage() {
           {step === 2 && (
             <div>
               <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
-                프로필 정보
+                {t.signup.steps.profile}
               </h2>
-              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>컴카드에 활용될 정보입니다. 나중에 언제든 수정할 수 있어요.</p>
+              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>{t.signup.steps.profileSub}</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
                 <div>
@@ -187,11 +191,11 @@ export default function SignupPage() {
                 <button onClick={() => setStep(1)} style={{
                   flex: 1, background: "#fff", color: "var(--text)", border: "1px solid var(--border)",
                   padding: "16px", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer",
-                }}>← Back</button>
+                }}>← {t.signup.back}</button>
                 <button onClick={() => setStep(3)} style={{
                   flex: 2, background: "var(--text)", color: "#fff", border: "none",
                   padding: "16px", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer",
-                }}>Next →</button>
+                }}>{t.signup.next} →</button>
               </div>
             </div>
           )}
@@ -200,9 +204,9 @@ export default function SignupPage() {
           {step === 3 && (
             <div>
               <h2 className="font-display" style={{ fontSize: "36px", fontWeight: 400, marginBottom: "8px" }}>
-                신체 정보
+                {t.signup.steps.measurements}
               </h2>
-              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>스크롤을 돌려 값을 선택하세요.</p>
+              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "44px" }}>{t.signup.steps.measurementsSub}</p>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "32px 24px" }}>
                 {[
@@ -227,7 +231,7 @@ export default function SignupPage() {
               </div>
 
               <div style={{ marginTop: "52px", padding: "24px", background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "16px" }}>입력 요약</p>
+                <p style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "16px" }}>{t.signup.summary}</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 32px", fontSize: "13px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
                     <span style={{ color: "var(--muted)" }}>Name</span>
@@ -260,11 +264,11 @@ export default function SignupPage() {
                 <button onClick={() => setStep(2)} style={{
                   flex: 1, background: "#fff", color: "var(--text)", border: "1px solid var(--border)",
                   padding: "16px", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer",
-                }}>← Back</button>
+                }}>← {t.signup.back}</button>
                 <button onClick={() => alert("가입 완료! (Supabase 연결 후 실제 저장됩니다)")} style={{
                   flex: 2, background: "var(--text)", color: "#fff", border: "none",
                   padding: "16px", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer",
-                }}>가입 완료</button>
+                }}>{t.signup.complete}</button>
               </div>
             </div>
           )}

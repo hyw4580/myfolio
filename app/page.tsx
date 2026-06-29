@@ -1,6 +1,7 @@
 import Nav from "./components/Nav";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getLocale, getT } from "@/lib/i18n";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -13,6 +14,10 @@ export default async function Home() {
     .limit(6);
 
   const displayModels = (models && models.length > 0) ? models : null;
+
+  const locale = await getLocale();
+  const t = getT(locale);
+
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh", color: "var(--text)" }}>
       <Nav />
@@ -44,24 +49,28 @@ export default async function Home() {
             fontSize: "clamp(24px, 4.5vw, 62px)", fontWeight: 400,
             lineHeight: 1.1, letterSpacing: "-0.01em", marginBottom: "36px", maxWidth: "900px", color: "#fff",
           }}>
-            모델의 첫인상을<br />완성하다
+            {t.home.hero.title.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+            ))}
           </h1>
           <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.65)", lineHeight: 1.9, maxWidth: "380px", marginBottom: "56px", letterSpacing: "0.01em" }}>
-            컴카드부터 개인 포트폴리오 페이지까지,<br />myfolio 하나로 나를 세상에 보여주세요.
+            {t.home.hero.subtitle.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+            ))}
           </p>
           <div style={{ display: "flex", gap: "0", alignItems: "center", justifyContent: "center" }}>
             <Link href="/comcard" style={{
               background: "#fff", color: "#0A0A0A", padding: "16px 44px",
               textDecoration: "none", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase",
             }}>
-              시작하기
+              {t.home.hero.getStarted}
             </Link>
             <Link href="/gallery" style={{
               color: "rgba(255,255,255,0.8)", padding: "16px 32px",
               textDecoration: "none", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase",
               border: "1px solid rgba(255,255,255,0.3)", borderLeft: "none",
             }}>
-              갤러리 보기
+              {t.home.hero.viewGallery}
             </Link>
           </div>
         </div>
@@ -138,15 +147,15 @@ export default async function Home() {
             {[
               {
                 num: "01", title: "Comp Card", link: "/comcard",
-                desc: "원하는 템플릿을 선택하고 정보와 사진을 입력하면 나만의 컴카드가 완성됩니다. PDF 또는 이미지로 즉시 다운로드.",
+                desc: t.home.features.compCardDesc,
               },
               {
                 num: "02", title: "Portfolio", link: "/model/emma-j",
-                desc: "가입하면 나만의 고유 링크가 생성됩니다. 컴카드, 스냅, 영상을 한 페이지에서 클라이언트에게 보여주세요.",
+                desc: t.home.features.portfolioDesc,
               },
               {
                 num: "03", title: "Browse", link: "/gallery",
-                desc: "키, 사이즈, 헤어색상 등 원하는 조건으로 등록된 모델을 검색하고 바로 연락할 수 있습니다.",
+                desc: t.home.features.browseDesc,
               },
             ].map((f, i) => (
               <Link key={i} href={f.link} style={{ textDecoration: "none", color: "inherit" }}>
@@ -179,16 +188,18 @@ export default async function Home() {
               Become a Model
             </p>
             <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, lineHeight: 1.1, marginBottom: "28px" }}>
-              지금 바로<br />나를 알려보세요
+              {t.home.becomeModel.title.split('\n').map((line, i, arr) => (
+                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+              ))}
             </h2>
             <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, marginBottom: "44px" }}>
-              컴카드를 직접 만들고, 나만의 포트폴리오 링크를 공유하세요. 클라이언트들이 당신을 찾을 수 있도록 갤러리에 등록할 수도 있어요.
+              {t.home.becomeModel.subtitle}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0", marginBottom: "48px", borderTop: "1px solid var(--border)" }}>
               {[
-                "정보와 사진을 입력해 컴카드를 만드세요",
-                "나만의 링크로 포트폴리오를 공유하세요",
-                "공개 설정 후 갤러리에 노출되어 섭외를 받으세요",
+                t.home.becomeModel.step1,
+                t.home.becomeModel.step2,
+                t.home.becomeModel.step3,
               ].map((step, i) => (
                 <div key={i} style={{ display: "flex", gap: "24px", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--border)" }}>
                   <span style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.1em", minWidth: "20px" }}>0{i + 1}</span>
@@ -201,7 +212,7 @@ export default async function Home() {
               padding: "16px 44px", textDecoration: "none",
               fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase",
             }}>
-              무료로 시작하기
+              {t.home.becomeModel.startFree}
             </Link>
           </div>
         </div>
@@ -213,10 +224,10 @@ export default async function Home() {
         <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
           <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, marginBottom: "20px", lineHeight: 1.1 }}>
-            궁금한 점이 있으신가요?
+            {t.home.contact.title}
           </h2>
           <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.8, marginBottom: "52px" }}>
-            서비스 이용, 파트너십, 기타 문의사항은 아래로 연락해주세요.
+            {t.home.contact.subtitle}
           </p>
           <div style={{ display: "flex", gap: "0", justifyContent: "center", flexWrap: "wrap" }}>
             <a href="mailto:hello@myfolio.com" style={{
@@ -241,9 +252,9 @@ export default async function Home() {
       <footer className="home-footer" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="font-display" style={{ fontSize: "18px", fontWeight: 400 }}>myfolio</span>
         <div className="home-footer-links">
-          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>이용약관</a>
-          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>개인정보처리방침</a>
-          <a href="#contact" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>문의</a>
+          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.terms}</a>
+          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.privacy}</a>
+          <a href="#contact" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.contact}</a>
         </div>
         <p style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.08em" }}>© 2025 myfolio</p>
       </footer>

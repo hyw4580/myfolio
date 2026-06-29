@@ -5,6 +5,7 @@ import Link from "next/link";
 import Nav from "../components/Nav";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { useT } from "../components/LocaleProvider";
 
 type CompCard = { id: string; title: string; canvas_type: string; created_at: string; };
 
@@ -116,6 +117,7 @@ const labelStyle: React.CSSProperties = {
 export default function MyPage() {
   const router   = useRouter();
   const supabase = createClient();
+  const t = useT();
   const [user,      setUser]      = useState<User | null>(null);
   const [profile,   setProfile]   = useState<Profile | null>(null);
   const [compCards, setCompCards] = useState<CompCard[]>([]);
@@ -181,7 +183,7 @@ export default function MyPage() {
 
   if (!profile) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: "var(--muted)", fontSize: "13px" }}>불러오는 중...</p>
+      <p style={{ color: "var(--muted)", fontSize: "13px" }}>{t.mypage.loading}</p>
     </div>
   );
 
@@ -202,7 +204,7 @@ export default function MyPage() {
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "var(--muted)" }}>갤러리 공개</span>
+              <span style={{ fontSize: "12px", color: "var(--muted)" }}>{t.mypage.galleryPublic}</span>
               <button onClick={() => update("is_public", !profile.is_public)} style={{
                 width: "40px", height: "22px", borderRadius: "11px", border: "none",
                 background: profile.is_public ? "var(--text)" : "var(--border)",
@@ -221,16 +223,16 @@ export default function MyPage() {
               color: "var(--muted)", textDecoration: "none",
               border: "1px solid var(--border)", padding: "10px 18px",
             }}>
-              포트폴리오 보기 →
+              {t.mypage.viewPortfolio}
             </Link>
           </div>
         </div>
 
         {/* ── 포트폴리오 주소 ── */}
         <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
-          <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "8px" }}>포트폴리오 주소</h2>
+          <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "8px" }}>{t.mypage.portfolioUrl}</h2>
           <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "20px", lineHeight: 1.6 }}>
-            영문 소문자, 숫자, 하이픈(-)만 사용 가능해요. 중복되지 않아야 해요.
+            {t.mypage.portfolioUrlDesc}
           </p>
           <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
             <span style={{ ...inputStyle, width: "auto", background: "var(--surface)", color: "var(--muted)", borderRight: "none", display: "flex", alignItems: "center", padding: "10px 12px", fontSize: "13px", whiteSpace: "nowrap" }}>
@@ -246,18 +248,18 @@ export default function MyPage() {
               padding: "10px 20px", background: "var(--text)", color: "#fff",
               border: "none", fontSize: "12px", letterSpacing: "0.08em", cursor: "pointer", whiteSpace: "nowrap",
             }}>
-              저장
+              {t.mypage.save}
             </button>
           </div>
-          {slugStatus === "ok"      && <p style={{ fontSize: "12px", color: "#22c55e", marginTop: "8px" }}>✓ 저장됐어요</p>}
-          {slugStatus === "taken"   && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>이미 사용 중인 주소예요</p>}
-          {slugStatus === "invalid" && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>영문 소문자, 숫자, 하이픈만 입력해주세요</p>}
-          {slugStatus === "checking"&& <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>확인 중...</p>}
+          {slugStatus === "ok"      && <p style={{ fontSize: "12px", color: "#22c55e", marginTop: "8px" }}>{t.mypage.slugOk}</p>}
+          {slugStatus === "taken"   && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{t.mypage.slugTaken}</p>}
+          {slugStatus === "invalid" && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{t.mypage.slugInvalid}</p>}
+          {slugStatus === "checking"&& <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>{t.mypage.slugChecking}</p>}
         </section>
 
         {/* ── 프로필 정보 ── */}
         <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
-          <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "28px" }}>프로필 정보</h2>
+          <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "28px" }}>{t.mypage.profileInfo}</h2>
 
           {/* 메인 사진 */}
           <div style={{ display: "flex", alignItems: "center", gap: "24px", marginBottom: "28px" }}>
@@ -270,10 +272,10 @@ export default function MyPage() {
               }
             </div>
             <div>
-              <p style={{ fontSize: "13px", marginBottom: "8px" }}>메인 프로필 사진</p>
-              <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px", lineHeight: 1.6 }}>포트폴리오 상단에 표시되는 대표 사진</p>
+              <p style={{ fontSize: "13px", marginBottom: "8px" }}>{t.mypage.mainPhoto}</p>
+              <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px", lineHeight: 1.6 }}>{t.mypage.mainPhotoDesc}</p>
               <label style={{ display: "inline-block", fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", border: "1px solid var(--border)", padding: "10px 18px", cursor: "pointer" }}>
-                사진 업로드
+                {t.mypage.uploadPhoto}
                 <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
                   const file = e.target.files?.[0];
                   if (!file || !user) return;
@@ -291,8 +293,8 @@ export default function MyPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             {/* 영문/한글 이름 */}
             {[
-              { label: "영문 이름", field: "eng_name", placeholder: "Emma Johnson",   type: "text" },
-              { label: "한글 이름", field: "kor_name", placeholder: "엠마 존슨",        type: "text" },
+              { label: t.mypage.labels.engName, field: "eng_name", placeholder: "Emma Johnson",   type: "text" },
+              { label: t.mypage.labels.korName, field: "kor_name", placeholder: "엠마 존슨",        type: "text" },
             ].map(({ label, field, placeholder, type }) => (
               <div key={field}>
                 <label style={labelStyle}>{label}</label>
@@ -306,7 +308,7 @@ export default function MyPage() {
 
             {/* 성별 — 셀렉트 */}
             <div>
-              <label style={labelStyle}>성별</label>
+              <label style={labelStyle}>{t.mypage.labels.gender}</label>
               <select
                 style={{ ...inputStyle, cursor: "pointer" }}
                 value={profile.gender ?? ""}
@@ -322,21 +324,21 @@ export default function MyPage() {
 
             {/* 출생연도 */}
             <div>
-              <label style={labelStyle}>출생연도</label>
+              <label style={labelStyle}>{t.mypage.labels.birthYear}</label>
               <YearDropdown value={profile.birth_year} onChange={y => update("birth_year", y)} inputStyle={inputStyle} />
             </div>
 
             {/* 나머지 필드 */}
             {[
-              { label: "키 (cm)",         field: "height",     placeholder: "170",             type: "number" },
-              { label: "몸무게 (kg)",      field: "weight",     placeholder: "52",              type: "number" },
-              { label: "가슴 (in)",       field: "chest",      placeholder: "34",              type: "number" },
-              { label: "허리 (in)",       field: "waist",      placeholder: "24",              type: "number" },
-              { label: "힙 (in)",         field: "hip",        placeholder: "35",              type: "number" },
-              { label: "신발 사이즈 (mm)", field: "shoe_size",  placeholder: "250",             type: "number" },
-              { label: "헤어 컬러",        field: "hair",       placeholder: "Dark Brown",      type: "text"   },
-              { label: "아이 컬러",        field: "eye",        placeholder: "Black",           type: "text"   },
-              { label: "이메일",           field: "email",      placeholder: "hello@email.com", type: "text"   },
+              { label: t.mypage.labels.height,    field: "height",     placeholder: "170",             type: "number" },
+              { label: t.mypage.labels.weight,     field: "weight",     placeholder: "52",              type: "number" },
+              { label: t.mypage.labels.chest,      field: "chest",      placeholder: "34",              type: "number" },
+              { label: t.mypage.labels.waist,      field: "waist",      placeholder: "24",              type: "number" },
+              { label: t.mypage.labels.hip,        field: "hip",        placeholder: "35",              type: "number" },
+              { label: t.mypage.labels.shoeSize,   field: "shoe_size",  placeholder: "250",             type: "number" },
+              { label: t.mypage.labels.hair,       field: "hair",       placeholder: "Dark Brown",      type: "text"   },
+              { label: t.mypage.labels.eye,        field: "eye",        placeholder: "Black",           type: "text"   },
+              { label: t.mypage.labels.email,      field: "email",      placeholder: "hello@email.com", type: "text"   },
             ].map(({ label, field, placeholder, type }) => (
               <div key={field}>
                 <label style={labelStyle}>{label}</label>
@@ -353,15 +355,15 @@ export default function MyPage() {
         {/* ── 컴카드 관리 ── */}
         <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-            <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase" }}>내 컴카드</h2>
+            <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase" }}>{t.mypage.myComCards}</h2>
             <Link href="/comcard" style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none", background: "var(--text)", color: "#fff", padding: "10px 18px" }}>
-              + 새로 만들기
+              {t.mypage.newComCard}
             </Link>
           </div>
           {compCards.length === 0 ? (
             <div style={{ padding: "40px", border: "1px solid var(--border)", textAlign: "center", color: "var(--muted)" }}>
-              <p style={{ fontSize: "13px" }}>저장된 컴카드가 없어요</p>
-              <p style={{ fontSize: "12px", marginTop: "6px" }}>컴카드 디자인 후 "마이페이지에 저장" 버튼을 눌러주세요</p>
+              <p style={{ fontSize: "13px" }}>{t.mypage.noComCards}</p>
+              <p style={{ fontSize: "12px", marginTop: "6px" }}>{t.mypage.noComCardsDesc}</p>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
@@ -375,8 +377,8 @@ export default function MyPage() {
                   <p style={{ fontSize: "13px", marginBottom: "4px" }}>{card.title}</p>
                   <p style={{ fontSize: "11px", color: "var(--muted)" }}>{new Date(card.created_at).toLocaleDateString("ko-KR")}</p>
                   <div style={{ display: "flex", gap: "6px", marginTop: "12px" }}>
-                    <Link href={`/comcard?id=${card.id}`} style={{ fontSize: "11px", background: "var(--text)", color: "#fff", border: "none", padding: "6px 10px", cursor: "pointer", textDecoration: "none" }}>편집</Link>
-                    <button onClick={async () => { await createClient().from("comp_cards").delete().eq("id", card.id); setCompCards(prev => prev.filter(c => c.id !== card.id)); }} style={{ fontSize: "11px", color: "var(--muted)", background: "none", border: "1px solid var(--border)", padding: "6px 10px", cursor: "pointer" }}>삭제</button>
+                    <Link href={`/comcard?id=${card.id}`} style={{ fontSize: "11px", background: "var(--text)", color: "#fff", border: "none", padding: "6px 10px", cursor: "pointer", textDecoration: "none" }}>{t.mypage.edit}</Link>
+                    <button onClick={async () => { await createClient().from("comp_cards").delete().eq("id", card.id); setCompCards(prev => prev.filter(c => c.id !== card.id)); }} style={{ fontSize: "11px", color: "var(--muted)", background: "none", border: "1px solid var(--border)", padding: "6px 10px", cursor: "pointer" }}>{t.mypage.delete}</button>
                   </div>
                 </div>
               ))}
@@ -391,7 +393,7 @@ export default function MyPage() {
             padding: "14px 44px", fontSize: "12px", letterSpacing: "0.14em",
             textTransform: "uppercase", cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
           }}>
-            {saved ? "저장됨 ✓" : saving ? "저장 중..." : "저장하기"}
+            {saved ? t.mypage.saved : saving ? t.mypage.saving : t.mypage.saveProfile}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Nav from "../components/Nav";
+import { useT } from "../components/LocaleProvider";
 
 const allModels = [
   { id: "emma-j", engName: "Emma Johnson", gender: "Female", birthYear: 2001, height: 175, weight: 52, chest: 34, waist: 24, hip: 35, shoeSize: 250, hair: "Black", eye: "Dark Brown", photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&h=800&fit=crop&q=80" },
@@ -60,6 +61,7 @@ function RangeFilter({ label, unit, value, onChange, min, max }: {
 }
 
 export default function GalleryPage() {
+  const t = useT();
   const [filterOpen, setFilterOpen] = useState(false);
   const [gender, setGender] = useState<"All" | "Female" | "Male" | "Non-binary" | "Prefer not to say">("All");
   const [birthYearRange, setBirthYearRange] = useState<[number, number]>([1970, 2008]);
@@ -168,7 +170,7 @@ export default function GalleryPage() {
             </h1>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <button className="gallery-filter-toggle" onClick={() => setFilterOpen(o => !o)}>
-                ☰ {filterOpen ? "필터 닫기" : "필터"}
+                ☰ {filterOpen ? t.gallery.filterOpen : t.gallery.filterClosed}
               </button>
               <span style={{ fontSize: "12px", color: "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 {filtered.length} models
@@ -206,8 +208,8 @@ export default function GalleryPage() {
           {filtered.length === 0 && (
             <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)" }}>
               <p style={{ fontSize: "40px", marginBottom: "16px", opacity: 0.2 }}>◎</p>
-              <p style={{ fontSize: "15px" }}>No models found.</p>
-              <p style={{ fontSize: "13px", marginTop: "8px" }}>Try adjusting the filters.</p>
+              <p style={{ fontSize: "15px" }}>{t.gallery.noModels}</p>
+              <p style={{ fontSize: "13px", marginTop: "8px" }}>{t.gallery.adjustFilters}</p>
             </div>
           )}
         </main>
