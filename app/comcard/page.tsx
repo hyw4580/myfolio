@@ -1071,7 +1071,7 @@ function ComcardPageInner() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { alert("로그인이 필요합니다."); return; }
     setCardSaving(true);
-    const cardData = { bgColor, txtColor, fontWeight, statsLayout, enabledFields, photos, textBlocks };
+    const cardData = { bgColor, txtColor, fontWeight, statsLayout, enabledFields, fields: selectedData, photos, textBlocks };
     if (editIdRef.current) {
       // 기존 카드 업데이트
       await supabase.from("comp_cards").update({ canvas_type: canvas, data: cardData, updated_at: new Date().toISOString() }).eq("id", editIdRef.current);

@@ -9,7 +9,8 @@ type CardData = {
   txtColor?: string;
   fontWeight?: number;
   statsLayout?: "1단" | "2단";
-  enabledFields?: Field[];
+  fields?: Field[];
+  enabledFields?: Field[] | string[];
   photos?: PhotoItem[];
   textBlocks?: TextBlock[];
 };
@@ -35,7 +36,8 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHe
   const statsLayout = data.statsLayout ?? "1단";
   const photos      = data.photos     ?? [];
   const textBlocks  = data.textBlocks ?? [];
-  const fields      = data.enabledFields ?? [];
+  const rawFields = data.fields ?? data.enabledFields ?? [];
+  const fields = (Array.isArray(rawFields) && rawFields.length > 0 && typeof rawFields[0] === "object" ? rawFields : []) as Field[];
 
   const statsFields   = fields.filter(d => !["English Name","Korean Name","Instagram","Email","Phone"].includes(d.label));
   const contactFields = fields.filter(d => ["Instagram","Email","Phone"].includes(d.label));
