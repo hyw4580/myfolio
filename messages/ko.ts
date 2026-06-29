@@ -1,12 +1,12 @@
 const ko = {
   nav: {
-    gallery: "갤러리",
-    compCard: "컴카드",
-    contact: "연락처",
-    myPage: "마이페이지",
-    logout: "로그아웃",
-    login: "로그인",
-    getStarted: "시작하기",
+    gallery: "Gallery",
+    compCard: "Comp Card",
+    contact: "Contact",
+    myPage: "My Page",
+    logout: "Logout",
+    login: "Login",
+    getStarted: "Get Started",
   },
   home: {
     hero: {
@@ -27,6 +27,7 @@ const ko = {
       step2: "나만의 링크로 포트폴리오를 공유하세요",
       step3: "공개 설정 후 갤러리에 노출되어 섭외를 받으세요",
       startFree: "무료로 시작하기",
+      badge: "Become a Model",
     },
     contact: {
       title: "궁금한 점이 있으신가요?",
@@ -35,7 +36,7 @@ const ko = {
     footer: {
       terms: "이용약관",
       privacy: "개인정보처리방침",
-      contact: "문의",
+      contact: "Contact",
     },
   },
   login: {
