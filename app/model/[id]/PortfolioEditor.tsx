@@ -76,10 +76,11 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
       const ext  = file.name.split(".").pop();
       const path = `${userId}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("snaps").upload(path, file);
-      if (error) continue;
+      if (error) { alert(`사진 업로드 실패: ${error.message}`); continue; }
       const { data: { publicUrl } } = supabase.storage.from("snaps").getPublicUrl(path);
       const order = orderRef.current++;
-      const { data: row } = await supabase.from("snaps").insert({ user_id: userId, url: publicUrl, order, category }).select("id, url, order, category").single();
+      const { data: row, error: dbError } = await supabase.from("snaps").insert({ user_id: userId, url: publicUrl, order, category }).select("id, url, order, category").single();
+      if (dbError) { alert(`DB 저장 실패: ${dbError.message}`); continue; }
       if (row) setter(prev => [...prev, row]);
     }
     setUploading(false);
@@ -96,7 +97,8 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
     const ext  = file.name.split(".").pop();
     const path = `${userId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("videos").upload(path, file);
-    if (!error) {
+    if (error) { alert(`영상 업로드 실패: ${error.message}`); }
+    else {
       const { data: { publicUrl } } = supabase.storage.from("videos").getPublicUrl(path);
       setVideos(prev => [...prev, publicUrl]);
     }
