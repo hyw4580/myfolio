@@ -720,7 +720,7 @@ function PhotoPanel({ photos, setPhotos, onAdd, onRemove }: {
         <p style={{ fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)" }}>
           Photos <span style={{ color: "var(--text)" }}>{photos.length}</span>
         </p>
-        {photos.length < 6 && (
+        {photos.length < 10 && (
           <button onClick={onAdd} style={{ fontSize: "10px", letterSpacing: "0.08em", border: "1px solid var(--border)", background: "#fff", color: "var(--text)", padding: "4px 10px", cursor: "pointer" }}>
             + Add
           </button>
