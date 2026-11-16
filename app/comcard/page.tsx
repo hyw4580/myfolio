@@ -10,6 +10,7 @@ import { useBillingStatus } from "@/lib/billing/client";
 import ShareButtons from "../components/ShareButtons";
 import { useIsNativeApp } from "@/lib/native";
 import { FREE_EXPORT_CARD_LIMIT, FREE_FEATURED_LIMIT, PRO_PLAN, formatKRW } from "@/lib/billing/plans";
+import { normCrop, panCrop, photoFillStyle, zoomCrop, MAX_ZOOM, type PhotoCrop } from "@/lib/photo-fill";
 import { track, tallyEdit, startEditorSession, endEditorSession, checkpointEditorSession, setEditorLayout, muteTallies, talliesMuted, type EditKind } from "@/lib/analytics";
 import { MIN_TEMPLATE_USERS, type ComboInsight } from "@/lib/comcard-ranking";
 import { buildLayout, safeOrder, PRESET_BY_ID, presetOptions, availablePresets, isContactField, isStatsField, type LayoutTemplate, type Preset } from "@/lib/comcard-layouts";
@@ -23,7 +24,7 @@ const CANVAS = {
 type CanvasType = keyof typeof CANVAS;
 
 /* ─────────────────────────── types ─────────────────────────── */
-type PhotoItem = { id: number; src: string | null; x: number; y: number; w: number; h: number };
+type PhotoItem = { id: number; src: string | null; x: number; y: number; w: number; h: number } & PhotoCrop; // fx·fy·zoom: 칸 안 사진 위치·크기
 type TextBlock  = { id: string; tag: "name" | "korName" | "stats" | "contact"; x: number; y: number; fontSize: number };
 type SnapLines  = { xs: number[]; ys: number[] };
 type Corner = "br" | "bl" | "tr" | "tl";
@@ -32,6 +33,7 @@ type DragState  =
   | { type: "photo-move";   id: number; mx: number; my: number; ox: number; oy: number }
   | { type: "photo-resize"; id: number; mx: number; my: number; ow: number; oh: number; ox: number; oy: number; handle: Handle }
   | { type: "text-move";    id: string; mx: number; my: number; ox: number; oy: number }
+  | { type: "photo-pan";    id: number; mx: number; my: number; start: PhotoCrop; fw: number; fh: number }
   | null;
 
 const SNAP        =  4; // move snap threshold (px)
@@ -165,7 +167,7 @@ function getDefaultTextBlocks(canvas: CanvasType): TextBlock[] {
 }
 
 /* ─────────────── photo element (display only) ───────────────── */
-function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean }) {
+function PhotoElement({ item, isSelected, isMain, isDark, adjusting }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean; adjusting: boolean }) {
   const ph = item.h;
   const base: React.CSSProperties = { position: "absolute", background: "#fff", border: "1px solid #0066FF", zIndex: 30, pointerEvents: "none" };
   const corner: React.CSSProperties = { ...base, width: 6, height: 6 };
@@ -174,18 +176,18 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
   return (
     <div style={{
       position: "absolute", left: item.x, top: item.y, width: item.w, height: ph,
-      cursor: "move", userSelect: "none",
-      outline: isSelected ? "1px solid rgba(0,102,255,0.7)" : "1px solid rgba(0,0,0,0.08)",
+      cursor: adjusting ? "grab" : "move", userSelect: "none",
+      outline: adjusting ? "2px dashed #FF7A00" : isSelected ? "1px solid rgba(0,102,255,0.7)" : "1px solid rgba(0,0,0,0.08)",
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
-        ? <div role="img" aria-label="" style={{ width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "cover", backgroundPosition: "center 30%", pointerEvents: "none" }} />
+        ? <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}><div role="img" aria-label="" style={photoFillStyle(item.src, item)} /></div>
         : <div style={{ width: "100%", height: "100%", background: isDark ? "#2A2A2A" : "#D8D4CF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", pointerEvents: "none" }}>
             <span style={{ fontSize: "20px", color: isDark ? "#555" : "#B0ACA8" }}>+</span>
             <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: isDark ? "#555" : "#A8A49F" }}>{isMain ? "Main" : `Photo`}</span>
           </div>
       }
-      {isSelected && (
+      {isSelected && !adjusting && (
         <>
           <div style={{ ...corner, top: -3, left: -3 }} />
           <div style={{ ...corner, top: -3, right: -3 }} />
@@ -268,6 +270,9 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
   userZoomRef: React.RefObject<number>;
 }) {
   const [selectedId, setSelectedId]   = useState<number | null>(null);
+  const [adjustId, setAdjustId]       = useState<number | null>(null); // 칸 안 사진 조정 중인 사진
+  const adjustIdRef    = useRef<number | null>(null);
+  useEffect(() => { adjustIdRef.current = adjustId; }, [adjustId]);
   const [snapLines, setSnapLines]     = useState<SnapLines>({ xs: [], ys: [] });
   const dragRef        = useRef<DragState>(null);
   const movedRef       = useRef(false); // 실제로 끌었는지 (클릭만 한 건 편집으로 안 셈)
@@ -320,7 +325,15 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       // 배경 터치 → preventDefault 없음 → 페이지 스크롤 허용
     };
     el.addEventListener("touchstart", handler, { passive: false });
-    return () => el.removeEventListener("touchstart", handler);
+    // 사진 조정 중엔 휠로 칸 안 사진 확대·축소 (Ctrl+휠은 화면 확대로 그대로)
+    const onWheel = (e: WheelEvent) => {
+      const id = adjustIdRef.current;
+      if (id === null || e.ctrlKey) return;
+      e.preventDefault();
+      setPhotos(p => p.map(p2 => p2.id === id ? { ...p2, ...zoomCrop(p2, normCrop(p2).zoom * (1 - e.deltaY * 0.002)) } : p2));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => { el.removeEventListener("touchstart", handler); el.removeEventListener("wheel", onWheel); };
   }, []);
 
   useEffect(() => {
@@ -496,6 +509,10 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
         setSnapLines({ xs: snapXs, ys: snapYs });
         setPhotos(p => p.map(p2 => p2.id === d.id ? { ...p2, w: newW, h: newH, x: newX, y: newY } : p2));
 
+      } else if (d.type === "photo-pan") {
+        const next = panCrop(d.start, (clientX - d.mx) / s, (clientY - d.my) / s, d.fw, d.fh);
+        setPhotos(p => p.map(p2 => p2.id === d.id ? { ...p2, ...next } : p2));
+
       } else if (d.type === "text-move") {
         const cv   = CANVAS[canvasTypeRef.current];
         const prev = photosRef.current;
@@ -545,7 +562,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
 
     const onUp = () => {
       const d = dragRef.current;
-      if (d && movedRef.current) tallyEdit(d.type === "photo-resize" ? "photo_resize" : d.type === "photo-move" ? "photo_move" : "text_move");
+      if (d && movedRef.current) tallyEdit(d.type === "photo-resize" ? "photo_resize" : d.type === "photo-move" ? "photo_move" : d.type === "photo-pan" ? "photo_crop" : "text_move");
       movedRef.current = false;
       dragRef.current = null; setSnapLines({ xs: [], ys: [] });
     };
@@ -569,6 +586,15 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
     const cx = (clientX - rect.left) / effectiveScale;
     const cy = (clientY - rect.top) / effectiveScale;
 
+    // 사진 조정 중: 그 사진 안을 끌면 칸 안에서 사진만 이동, 밖을 누르면 조정 끝
+    if (adjustId !== null) {
+      const ap = photos.find(p => p.id === adjustId);
+      if (ap && cx >= ap.x && cx <= ap.x + ap.w && cy >= ap.y && cy <= ap.y + ap.h) {
+        dragRef.current = { type: "photo-pan", id: ap.id, mx: clientX, my: clientY, start: normCrop(ap), fw: ap.w, fh: ap.h };
+        return;
+      }
+      setAdjustId(null);
+    }
     // Resize handles of selected photo (corners + edges)
     if (selectedId !== null) {
       const sel = photos.find(p => p.id === selectedId);
@@ -610,11 +636,18 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       ref={canvasRef}
       onMouseDown={handleCanvasPointerDown}
       onTouchStart={(e) => { handleCanvasPointerDown(e); }}
+      onDoubleClick={(e) => {
+        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+        const es = scale * (userZoomRef.current ?? 1);
+        const cx = (e.clientX - rect.left) / es, cy = (e.clientY - rect.top) / es;
+        const hit = [...photos].reverse().find(p => p.src && cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
+        if (hit) { setSelectedId(hit.id); setAdjustId(hit.id); }
+      }}
       style={{ position: "absolute", top: 0, left: 0, width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible", transformOrigin: "top left", transform: `scale(${scale})` }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
-        <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} />
+        <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} adjusting={adjustId === item.id} />
       ))}
 
       {/* 안전 영역 가이드 — 저장/출력 시 제외되는 표시용 선 */}
@@ -708,6 +741,30 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
         </TextElement>
       )}
     </div>
+    {/* 선택한 사진 아래 도구: 칸 안 사진 위치·크기 조정 (캔버스 밖이라 다운로드 이미지에 안 찍힘) */}
+    {(() => {
+      const sel = photos.find(p => p.id === (adjustId ?? selectedId));
+      if (!sel?.src) return null;
+      const c = normCrop(sel);
+      const set = (next: PhotoCrop) => setPhotos(p => p.map(p2 => p2.id === sel.id ? { ...p2, ...next } : p2));
+      const btn: React.CSSProperties = { padding: "5px 9px", fontSize: "11px", border: "1px solid #ddd", background: "#fff", color: "#111", cursor: "pointer", lineHeight: 1 };
+      const top = Math.min((sel.y + sel.h) * scale + 6, h * scale - 34);
+      return (
+        <div onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}
+          style={{ position: "absolute", left: Math.max(0, sel.x * scale), top, zIndex: 50, display: "flex", gap: "4px", alignItems: "center", background: "rgba(255,255,255,0.96)", boxShadow: "0 2px 10px rgba(0,0,0,0.15)", padding: "4px", whiteSpace: "nowrap" }}>
+          {adjustId !== sel.id ? (
+            <button style={btn} onClick={() => setAdjustId(sel.id)}>사진 조정</button>
+          ) : <>
+            <span style={{ fontSize: "10px", color: "#FF7A00", padding: "0 4px" }}>끌어서 위치</span>
+            <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom - 0.1)); tallyEdit("photo_crop"); }} aria-label="축소">−</button>
+            <input type="range" min={1} max={MAX_ZOOM} step={0.05} value={c.zoom} onChange={e => set(zoomCrop(sel, Number(e.target.value)))} onMouseUp={() => tallyEdit("photo_crop")} onTouchEnd={() => tallyEdit("photo_crop")} style={{ width: 90 }} aria-label="확대" />
+            <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom + 0.1)); tallyEdit("photo_crop"); }} aria-label="확대">+</button>
+            <button style={btn} onClick={() => { set({ fx: undefined, fy: undefined, zoom: undefined }); tallyEdit("photo_crop"); }}>맞춤</button>
+            <button style={{ ...btn, background: "#111", color: "#fff", border: "none" }} onClick={() => setAdjustId(null)}>완료</button>
+          </>}
+        </div>
+      );
+    })()}
     </div>
   );
 }
@@ -1275,7 +1332,7 @@ function CardPreview({ canvas, choice, photos, order, fields, width }: {
         const p = L.photos[i]; const src = photos[oi]?.src;
         return (
           <div key={i} style={{ position: "absolute", left: p.x * s, top: p.y * s, width: p.w * s, height: p.h * s, background: choice.bgColor === "#0C0C0C" ? "#2A2A2A" : "#D8D4CF" }}>
-            {src && <div style={{ width: "100%", height: "100%", backgroundImage: `url("${src}")`, backgroundSize: "cover", backgroundPosition: "center 30%" }} />}
+            {src && <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}><div style={photoFillStyle(src, photos[oi])} /></div>}
           </div>
         );
       })}
@@ -1798,7 +1855,7 @@ function ComcardPageInner() {
     const nameLen = selectedData.find(f => f.label === "English Name")?.value.length ?? 12;
     const statsCount = selectedData.filter(f => isStatsField(f.label)).length;
     const layout = buildLayout(canvas, c.template, base.length, c.nameSize, nameLen, c.statsLayout, statsCount);
-    setPhotos(order.map((oi, i) => ({ ...layout.photos[i], id: base[oi].id, src: base[oi].src })));
+    setPhotos(order.map((oi, i) => ({ ...layout.photos[i], id: base[oi].id, src: base[oi].src, fx: base[oi].fx, fy: base[oi].fy, zoom: base[oi].zoom })));
     setTextBlocks(layout.textBlocks);
     if (HEX.test(c.bgColor))  setBgColor(c.bgColor);
     if (HEX.test(c.txtColor)) setTxtColor(c.txtColor);

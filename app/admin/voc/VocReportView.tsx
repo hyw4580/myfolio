@@ -90,7 +90,7 @@ const FUNNEL_KO: [string, string][] = [
   ["chose_template", "양식 선택"], ["saved_card", "저장"], ["downloaded_or_shared", "다운로드·공유"], ["subscribed", "결제"],
 ];
 const EDIT_KO: Record<string, string> = {
-  photo_move: "사진 이동", photo_resize: "사진 크기", text_move: "글자 이동", text_size: "글자 크기", bg_color: "배경색", text_color: "글자색",
+  photo_move: "사진 이동", photo_resize: "사진 크기", photo_crop: "칸 안 사진 조정", text_move: "글자 이동", text_size: "글자 크기", bg_color: "배경색", text_color: "글자색",
   font_weight: "굵기", name_caps: "대문자", stats_layout: "신체정보 단", photo_add: "사진 추가", photo_remove: "사진 삭제", photo_replace: "사진 교체",
   field_toggle: "표시 항목", preset_apply: "프리셋 바꾸기", ai_apply: "AI안 적용", undo: "되돌리기", reset: "초기화",
 };

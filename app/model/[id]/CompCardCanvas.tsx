@@ -1,7 +1,8 @@
 "use client";
 import { isContactField, isStatsField } from "@/lib/comcard-layouts";
+import { photoFillStyle, type PhotoCrop } from "@/lib/photo-fill";
 
-type PhotoItem  = { id: number; src: string | null; x: number; y: number; w: number; h?: number };
+type PhotoItem  = { id: number; src: string | null; x: number; y: number; w: number; h?: number } & PhotoCrop;
 type TextBlock  = { id: string; tag: "name" | "korName" | "stats" | "contact"; x: number; y: number; fontSize: number };
 type Field      = { label: string; value: string };
 
@@ -69,7 +70,7 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHe
               overflow: "hidden", background: "#e8e8e8",
             }}>
               {item.src
-                ? <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }} />
+                ? <div role="img" aria-label="" style={photoFillStyle(item.src, item)} />
                 : <div style={{ width: "100%", height: "100%", background: "#e0e0e0" }} />
               }
             </div>

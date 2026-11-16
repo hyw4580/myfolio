@@ -81,7 +81,7 @@ export function track(name: EventName, props: Props = {}) {
  * 드래그 한 번마다 보내면 너무 많으므로, 편집기에 머무는 동안 종류별 횟수를 세고
  * 저장·다운로드·페이지 떠남 때 한 번에 "editor_summary"로 보냄 */
 export type EditKind =
-  | "photo_move" | "photo_resize" | "text_move" | "text_size"
+  | "photo_move" | "photo_resize" | "photo_crop" | "text_move" | "text_size"
   | "bg_color" | "text_color" | "font_weight" | "name_caps" | "stats_layout"
   | "photo_add" | "photo_remove" | "photo_replace" | "field_toggle"
   | "preset_apply" | "ai_apply" | "undo" | "reset";
