@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>myfolio</title>
+  <style>
+    html, body { margin: 0; height: 100%; font-family: -apple-system, "Apple SD Gothic Neo", sans-serif; background: #F8F7F4; color: #0A0A0A; }
+    main { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; box-sizing: border-box; }
+    h1 { font-family: Georgia, serif; font-weight: 400; font-size: 34px; margin: 0 0 12px; }
+    p { color: #777; font-size: 14px; line-height: 1.7; margin: 0 0 28px; }
+    button { background: #0A0A0A; color: #fff; border: none; padding: 14px 32px; font-size: 13px; letter-spacing: .08em; }
+  </style>
+</head>
+<body>
+  <!-- 앱이 사이트에 연결하지 못할 때(오프라인 등) 보이는 화면 -->
+  <main>
+    <h1>myfolio</h1>
+    <p>인터넷 연결을 확인해 주세요.<br />연결되면 다시 시도할 수 있어요.</p>
+    <button onclick="location.reload()">다시 시도</button>
+  </main>
+</body>
+</html>

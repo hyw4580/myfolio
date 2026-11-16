@@ -260,3 +260,59 @@ button:focus {
     margin-bottom: 20px;
   }
 }
+
+/* ── 회원가입(프로필 입력) 반응형 ── */
+.signup-layout {
+  padding-top: 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 80px);
+}
+.signup-side {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 80px 72px;
+  position: sticky; top: 80px;
+  height: calc(100vh - 80px);
+}
+.signup-form { padding: 64px 72px; overflow-y: auto; }
+.signup-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.signup-measure-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px 24px; }
+
+@media (max-width: 768px) {
+  .signup-layout { grid-template-columns: 1fr; }
+  .signup-side {
+    position: static; height: auto;
+    border-right: none; border-bottom: 1px solid var(--border);
+    padding: 40px 24px;
+  }
+  .signup-steps { display: none !important; }
+  .signup-form { padding: 40px 24px 64px; }
+  .signup-two-col { grid-template-columns: 1fr; }
+  .signup-measure-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 16px; }
+}
+
+
+/* ── 포트폴리오: 디지털 명함 ── */
+.bc-outer { background: #fafafa; border-bottom: 1px solid #eee; padding: 48px 24px 40px; }
+.bc-card {
+  max-width: 880px; margin: 0 auto; background: #fff;
+  display: grid; grid-template-columns: 340px 1fr; gap: 0;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.08); border: 1px solid #eee;
+}
+.bc-photo { aspect-ratio: 3 / 4; background: #e8e5e0; overflow: hidden; }
+.bc-info { padding: 36px 36px 32px; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; min-width: 0; }
+.bc-career { max-width: 880px; margin: 28px auto 0; padding: 0 4px; }
+@media (max-width: 768px) {
+  .bc-outer { padding: 0 0 28px; background: #fff; }
+  .bc-card { grid-template-columns: 1fr; box-shadow: none; border: none; }
+  .bc-photo { aspect-ratio: 4 / 5; }
+  .bc-info { padding: 24px 20px 8px; gap: 18px; }
+  .bc-career { padding: 0 20px; }
+}
+
+/* ── 관리자 VOC 보고서 ── */
+@media (max-width: 860px) {
+  .admin-voc-grid { grid-template-columns: 1fr !important; }
+}

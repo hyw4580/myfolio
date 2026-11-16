@@ -5,8 +5,12 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useT } from "./LocaleProvider";
+import { FEATURES } from "@/lib/features";
+import { useIsNativeApp } from "@/lib/native";
+import FeedbackButton from "./FeedbackButton";
 
 export default function Nav() {
+  const inApp = useIsNativeApp(); // 앱 안에서는 요금제(외부 결제) 링크 숨김 — 스토어 규정
   const pathname = usePathname();
   const router   = useRouter();
   const [user, setUser]       = useState<User | null>(null);
@@ -62,9 +66,11 @@ export default function Nav() {
 
         {/* 데스크탑 메뉴 */}
         <div className="nav-desktop" style={{ display: "flex", gap: "40px", alignItems: "center" }}>
-          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}>{t.nav.gallery}</Link>
+          {FEATURES.gallery && <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}>{t.nav.gallery}</Link>}
           <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}>{t.nav.compCard}</Link>
-          <Link href="/#contact" style={linkStyle()}>{t.nav.contact}</Link>
+          {!inApp && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}>{t.nav.pricing}</Link>}
+          {FEATURES.contact && <Link href="/#contact" style={linkStyle()}>{t.nav.contact}</Link>}
+          <FeedbackButton style={linkStyle()} />
           {user ? (
             <>
               <Link href="/mypage" style={linkStyle(pathname === "/mypage")}>{t.nav.myPage}</Link>
@@ -100,9 +106,11 @@ export default function Nav() {
           display: "flex", flexDirection: "column", padding: "16px 24px 24px",
           gap: "20px",
         }}>
-          <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}  onClick={() => setMenuOpen(false)}>{t.nav.gallery}</Link>
+          {FEATURES.gallery && <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}  onClick={() => setMenuOpen(false)}>{t.nav.gallery}</Link>}
           <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}  onClick={() => setMenuOpen(false)}>{t.nav.compCard}</Link>
-          <Link href="/#contact" style={linkStyle()}                         onClick={() => setMenuOpen(false)}>{t.nav.contact}</Link>
+          {!inApp && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}  onClick={() => setMenuOpen(false)}>{t.nav.pricing}</Link>}
+          {FEATURES.contact && <Link href="/#contact" style={linkStyle()}                         onClick={() => setMenuOpen(false)}>{t.nav.contact}</Link>}
+          <FeedbackButton style={{ ...linkStyle(), textAlign: "left" }} />
           {user ? (
             <>
               <Link href="/mypage" style={linkStyle(pathname === "/mypage")} onClick={() => setMenuOpen(false)}>{t.nav.myPage}</Link>

@@ -1,18 +1,19 @@
 import Nav from "./components/Nav";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { publicReadClient, sanitizeProfile } from "@/lib/public-profile";
 import { getLocale, getT } from "@/lib/i18n";
+import { FEATURES } from "@/lib/features";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: models } = await supabase
-    .from("profiles")
-    .select("id, eng_name, kor_name, height, hair, chest, waist, hip, photo_url")
+  // 공개 설정한 모델만, 공개 항목만 (서버가 대신 조회)
+  const db = await publicReadClient();
+  const { data: rawModels } = !FEATURES.gallery ? { data: null } : await db
+    .from("profiles").select("*")
     .eq("is_public", true)
     .not("eng_name", "is", null)
     .order("created_at", { ascending: false })
     .limit(6);
-
+  const models = (rawModels ?? []).map(sanitizeProfile);
   const displayModels = (models && models.length > 0) ? models : null;
 
   const locale = await getLocale();
@@ -65,19 +66,19 @@ export default async function Home() {
             }}>
               {t.home.hero.getStarted}
             </Link>
-            <Link href="/gallery" style={{
+            {FEATURES.gallery && <Link href="/gallery" style={{
               color: "rgba(255,255,255,0.8)", padding: "16px 32px",
               textDecoration: "none", fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase",
               border: "1px solid rgba(255,255,255,0.3)", borderLeft: "none",
             }}>
               {t.home.hero.viewGallery}
-            </Link>
+            </Link>}
           </div>
         </div>
       </section>
 
       {/* Gallery Preview — 공개 모델 있을 때만 표시 */}
-      {displayModels && displayModels.length > 0 && <section id="gallery" className="home-section-pad">
+      {FEATURES.gallery && displayModels && displayModels.length > 0 && <section id="gallery" className="home-section-pad">
         <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "56px", flexWrap: "wrap", gap: "16px" }}>
             <div>
@@ -143,21 +144,21 @@ export default async function Home() {
             </h2>
           </div>
 
-          <div className="home-features-grid">
+          <div className="home-features-grid" style={FEATURES.gallery ? undefined : { gridTemplateColumns: "repeat(2, 1fr)" }}>
             {[
               {
                 num: "01", title: "Comp Card", link: "/comcard",
                 desc: t.home.features.compCardDesc,
               },
               {
-                num: "02", title: "Portfolio", link: "/model/emma-j",
+                num: "02", title: "Portfolio", link: "/mypage",
                 desc: t.home.features.portfolioDesc,
               },
               {
                 num: "03", title: "Browse", link: "/gallery",
                 desc: t.home.features.browseDesc,
               },
-            ].map((f, i) => (
+            ].filter(f => FEATURES.gallery || f.link !== "/gallery").map((f, i) => (
               <Link key={i} href={f.link} style={{ textDecoration: "none", color: "inherit" }}>
                 <div style={{
                   padding: "48px 44px", borderRight: "1px solid var(--border)",
@@ -193,14 +194,14 @@ export default async function Home() {
               ))}
             </h2>
             <p style={{ fontSize: "15px", color: "var(--muted)", lineHeight: 1.9, marginBottom: "44px" }}>
-              {t.home.becomeModel.subtitle}
+              {FEATURES.gallery ? t.home.becomeModel.subtitle : t.home.becomeModel.subtitleNoGallery}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0", marginBottom: "48px", borderTop: "1px solid var(--border)" }}>
               {[
                 t.home.becomeModel.step1,
                 t.home.becomeModel.step2,
                 t.home.becomeModel.step3,
-              ].map((step, i) => (
+              ].filter((_, i) => FEATURES.gallery || i < 2).map((step, i) => (
                 <div key={i} style={{ display: "flex", gap: "24px", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--border)" }}>
                   <span style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.1em", minWidth: "20px" }}>0{i + 1}</span>
                   <p style={{ fontSize: "14px", color: "var(--text)", lineHeight: 1.6 }}>{step}</p>
@@ -220,7 +221,7 @@ export default async function Home() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+      {FEATURES.contact && <section id="contact" className="home-section-pad" style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
         <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
           <p style={{ fontSize: "11px", letterSpacing: "0.24em", color: "var(--muted)", textTransform: "uppercase", marginBottom: "20px" }}>Contact</p>
           <h2 className="font-display" style={{ fontSize: "clamp(24px, 2.8vw, 42px)", fontWeight: 400, marginBottom: "20px", lineHeight: 1.1 }}>
@@ -246,15 +247,16 @@ export default async function Home() {
             </a>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Footer */}
       <footer className="home-footer" style={{ borderTop: "1px solid var(--border)" }}>
         <span className="font-display" style={{ fontSize: "18px", fontWeight: 400 }}>myfolio</span>
         <div className="home-footer-links">
-          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.terms}</a>
-          <a href="#" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.privacy}</a>
-          <a href="#contact" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.contact}</a>
+          <Link href="/terms" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.terms}</Link>
+          <Link href="/privacy" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.privacy}</Link>
+          <Link href="/refund" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>환불정책</Link>
+          {FEATURES.contact && <a href="#contact" style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", textDecoration: "none" }}>{t.home.footer.contact}</a>}
         </div>
         <p style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.08em" }}>© 2025 myfolio</p>
       </footer>

@@ -1,59 +1,54 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Nav from "../../components/Nav";
 import { createClient } from "@/lib/supabase/server";
 import PortfolioEditor from "./PortfolioEditor";
 import PortfolioContent from "./PortfolioContent";
-import ContactButtons from "./ContactButtons";
+import BusinessCard from "./BusinessCard";
+import ShareButtons from "../../components/ShareButtons";
+import { profilePath } from "@/lib/slug";
+import { getPublicProfile } from "@/lib/public-profile";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { billingConfigured } from "@/lib/billing/server";
 
-function getEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtube.com") || u.hostname.includes("youtu.be")) {
-      const id = u.searchParams.get("v") ?? u.pathname.split("/").pop();
-      return `https://www.youtube.com/embed/${id}`;
-    }
-    if (u.hostname.includes("vimeo.com")) {
-      const id = u.pathname.split("/").pop();
-      return `https://player.vimeo.com/video/${id}`;
-    }
-  } catch {}
-  return null;
-}
-
-function isVideoFile(url: string) {
-  return /\.(mp4|mov|webm|avi)(\?|$)/i.test(url);
+/** 포트폴리오 게시물(사진·영상·경력) 공개 여부: Pro 구독 중이거나 결제 기능 설정 전이면 공개 */
+async function portfolioActive(ownerId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  if (!admin || !billingConfigured()) return true;
+  const { data } = await admin.rpc("is_pro", { uid: ownerId });
+  return data === true;
 }
 
 export default async function ModelPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: param } = await params;
   const supabase = await createClient();
 
-  // slug 또는 UUID로 조회 — is_public 무관 (링크 공유용)
-  let { data: profile } = await supabase
-    .from("profiles").select("*").eq("slug", param).single();
-  if (!profile) {
-    const { data } = await supabase
-      .from("profiles").select("*").eq("id", param).single();
-    profile = data;
-  }
+  // 주소(이름) 또는 아이디로 조회 — 공개 설정한 항목만 받음 (is_public 무관, 링크 공유용)
+  const profile = await getPublicProfile(param);
 
   if (!profile) notFound();
 
   const id = profile.id;
 
-  const [{ data: allCompCards }, { data: allSnaps }] = await Promise.all([
+  // 카드·게시물은 보는 사람 권한으로 조회 → 남의 비공개 카드는 데이터베이스가 걸러줌 (화면에도 실리지 않음)
+  const [{ data: allCompCards }, { data: allSnaps }, active, { data: { user: viewer } }] = await Promise.all([
     supabase.from("comp_cards").select("id, title, canvas_type, data, created_at, is_featured").eq("user_id", id).order("created_at", { ascending: false }),
-    supabase.from("snaps").select("id, url, order, category").eq("user_id", id).order("order"),
+    supabase.from("snaps").select("id, url, order, category, concepts, ai_concepts").eq("user_id", id).order("order"),
+    portfolioActive(id),
+    supabase.auth.getUser(),
   ]);
+  const isOwner = viewer?.id === id;
+  // Pro가 끝나면 사진·영상·경력은 숨김 (삭제 안 함 — 다시 구독하면 바로 공개). 본인에게는 보이되 안내
+  const hidePosts = !active && !isOwner;
 
   const compCards = (allCompCards ?? []).filter(c => c.is_featured);
 
-  const gallery = (allSnaps ?? []).filter(s => s.category === "gallery");
-  const snaps   = (allSnaps ?? []).filter(s => s.category !== "gallery");
+  const postsSource = hidePosts ? [] : (allSnaps ?? []);
+  const gallery = postsSource.filter(s => s.category === "gallery");
+  const snaps   = postsSource.filter(s => s.category !== "gallery");
+  const career  = hidePosts ? null : (profile.career ?? null);
+  const videoUrls: string[] = hidePosts ? [] : (profile.video_urls ?? []);
 
-  const defaultVisibleSpecs = ["eng_name","kor_name","height","chest","waist","hip","shoe_size","hair","eye"];
-  const visibleSpecs: string[] = profile.visible_specs ?? defaultVisibleSpecs;
+  const visibleSpecs: string[] = profile.visible_specs;
 
   const allSpecsMap: { key: string; label: string; value: string | null }[] = [
     { key: "eng_name",   label: "NAME",        value: profile.eng_name   ?? null },
@@ -74,97 +69,55 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
     .filter(s => visibleSpecs.includes(s.key) && s.value !== null)
     .map(s => ({ label: s.label, value: s.value! }));
 
-  // 시안용 플레이스홀더 — 실제 데이터 없을 때 표시 (Unsplash 모델/패션 사진)
-  const demoPhoto = "https://images.unsplash.com/photo-1529139522a9154434a932?w=680&h=800&fit=crop&q=80";
-  const demoGallery = [
-    { id: "d1", url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=80&fit=crop" },
-    { id: "d2", url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80&fit=crop" },
-    { id: "d3", url: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66ef?w=600&q=80&fit=crop" },
-    { id: "d4", url: "https://images.unsplash.com/photo-1496747611176-843f8be85c01?w=600&q=80&fit=crop" },
-    { id: "d5", url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=600&q=80&fit=crop" },
-    { id: "d6", url: "https://images.unsplash.com/photo-1483985988355-763728e1cec4?w=600&q=80&fit=crop" },
-  ];
-  const demoSnaps = [
-    { id: "s1", url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&q=80&fit=crop" },
-    { id: "s2", url: "https://images.unsplash.com/photo-1524504388951-23e8e41b00a8?w=600&q=80&fit=crop" },
-    { id: "s3", url: "https://images.unsplash.com/photo-1539109136090-99b49061bb06?w=600&q=80&fit=crop" },
-    { id: "s4", url: "https://images.unsplash.com/photo-1529154166925-574a0236a4f4?w=600&q=80&fit=crop" },
-    { id: "s5", url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80&fit=crop" },
-    { id: "s6", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=600&q=80&fit=crop" },
-  ];
+  // 대표 사진: 프로필 사진 → 없으면 공개 컴카드의 메인 사진
+  const cardPhoto = (compCards[0]?.data as { photos?: { src: string | null }[] } | undefined)?.photos?.find(p => p.src?.startsWith("http"))?.src ?? null;
+  const displayPhoto = profile.photo_url ?? cardPhoto;
 
-  const displayPhoto   = profile.photo_url ?? demoPhoto;
-  const displayGallery = gallery.length > 0 ? gallery : demoGallery;
-  const displaySnaps   = snaps.length > 0   ? snaps   : demoSnaps;
+  // 한 줄 소개: 경력의 첫 줄
+  const tagline = (career ?? "").split("\n").map((l: string) => l.trim()).find(Boolean)?.slice(0, 60) ?? "";
 
-  const hasGallery  = true;  // 항상 표시 (데모 포함)
-  const hasSnaps    = true;
-  const hasCompCard = compCards && compCards.length > 0;
-  const hasVideo    = profile.video_urls && profile.video_urls.length > 0;
+  // 명함용 핵심 정보 (공개 설정한 항목만)
+  const show = (k: string) => visibleSpecs.includes(k);
+  const sizes = [profile.chest, profile.waist, profile.hip].every(Boolean) && show("chest") && show("waist") && show("hip")
+    ? `${profile.chest}-${profile.waist}-${profile.hip}` : null;
+  const chips = [
+    show("height") && profile.height ? `${profile.height}cm` : null,
+    sizes,
+    show("shoe_size") && profile.shoe_size ? `${profile.shoe_size}mm` : null,
+    show("hair") && profile.hair ? `Hair ${profile.hair}` : null,
+    show("eye") && profile.eye ? `Eyes ${profile.eye}` : null,
+  ].filter(Boolean) as string[];
+  // 나머지 상세 정보 (칩에 없는 것)
+  const inChips = new Set(["NAME", "KOR NAME", "HEIGHT", "SHOE SIZE", "HAIR", "EYES", ...(sizes ? ["BUST", "WAIST", "HIP"] : [])]);
+  const detailSpecs = specs.filter(sp => !inChips.has(sp.label));
 
+  const shareSlug = profilePath(profile.slug, id);
   const font = "var(--font-inter), var(--font-korean), sans-serif";
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", color: "#111", fontFamily: font }}>
-      <Nav />
-      <div style={{ paddingTop: "80px" }}>
+      {/* 명함 페이지는 가벼운 머리말만 */}
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px", borderBottom: "1px solid #f0f0f0" }}>
+        <Link href="/" className="font-display" style={{ fontSize: "22px", color: "#0A0A0A", textDecoration: "none" }}>myfolio</Link>
+        <Link href="/signup?next=/comcard&ref=profile" style={{ fontSize: "11px", color: "#666", textDecoration: "none", letterSpacing: "0.06em" }}>내 명함 만들기 →</Link>
+      </header>
 
-        {/* ── 헤더 ── */}
-        <div className="pf-header-outer">
-          <div className="pf-header-inner">
-
-            {/* 메인 사진 */}
-            <div>
-              <div style={{ aspectRatio: "3/4", overflow: "hidden", background: "#e8e5e0" }}>
-                <img src={displayPhoto} alt={profile.eng_name ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              </div>
-            </div>
-
-            {/* 이름 + 스펙 + 버튼 */}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", paddingTop: "4px" }}>
-              <div>
-                <h1 style={{ fontSize: "clamp(24px, 2.5vw, 38px)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", lineHeight: 1.05, marginBottom: "6px", fontFamily: "var(--font-cormorant), serif" }}>
-                  {profile.eng_name ?? "—"}
-                </h1>
-                {profile.kor_name && (
-                  <p style={{ fontSize: "13px", color: "#999", letterSpacing: "0.04em", fontFamily: font }}>{profile.kor_name}</p>
-                )}
-              </div>
-              {specs.length > 0 && (
-                <div>
-                  {specs.map(s => (
-                    <p key={s.label} style={{ fontSize: "12px", fontWeight: 500, letterSpacing: "0.06em", lineHeight: 2.2, color: "#222", fontFamily: font }}>
-                      {s.label}: {s.value}
-                    </p>
-                  ))}
-                </div>
-              )}
-              <ContactButtons
-                userId={id}
-                instagram={profile.instagram ?? null}
-                kakaoLink={profile.kakao_link ?? null}
-                tel={profile.tel ?? null}
-              />
-            </div>
-
-            {/* 경력 */}
-            <div className="pf-career-col">
-              <p style={{ fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#bbb", marginBottom: "20px", fontFamily: font }}>Career</p>
-              {profile.career
-                ? <p style={{ fontSize: "13px", lineHeight: 2, color: "#444", fontFamily: font, whiteSpace: "pre-line" }}>{profile.career}</p>
-                : <p style={{ fontSize: "12px", color: "#ccc", fontFamily: font }}>경력을 입력해주세요</p>
-              }
-            </div>
-          </div>
-        </div>
+      <div>
+        {/* ── 디지털 명함 ── */}
+        <BusinessCard
+          id={id} engName={profile.eng_name ?? null} korName={profile.kor_name ?? null} career={career}
+          photo={displayPhoto} tagline={tagline} chips={chips} details={detailSpecs.map(sp => `${sp.label} ${sp.value}`)}
+          instagram={profile.instagram ?? null} kakaoLink={profile.kakao_link ?? null} tel={profile.tel ?? null}
+          sharePath={shareSlug}
+        />
 
         {/* ── 콘텐츠 (탭 방식) ── */}
         <PortfolioContent
           userId={id}
-          gallery={displayGallery}
-          snaps={displaySnaps}
+          photos={[...gallery, ...snaps].sort((a, b) => b.order - a.order) /* 최신 업로드 순 */.map(p => ({ id: String(p.id), url: p.url, concepts: (p.concepts as string[] | null) ?? [] }))}
           compCards={compCards ?? []}
-          videoUrls={profile.video_urls ?? []}
+          videoUrls={videoUrls}
+          lockedForOwner={isOwner && !active}
         />
       </div>
 
@@ -180,8 +133,26 @@ export default async function ModelPage({ params }: { params: Promise<{ id: stri
         initialCareer={profile.career ?? null}
         initialVisibleSpecs={profile.visible_specs ?? null}
       />
+
+      {/* 공유받아 들어온 사람을 가입으로 이어주는 안내 */}
+      <footer style={{ borderTop: "1px solid #eee", padding: "28px 20px 40px", textAlign: "center" }}>
+        <p style={{ fontSize: "10px", letterSpacing: "0.2em", color: "#bbb", textTransform: "uppercase", marginBottom: "8px" }}>Made with myfolio</p>
+        <Link href="/signup?next=/comcard&ref=profile" style={{ fontSize: "13px", color: "#111" }}>나도 무료로 컴카드·포트폴리오 만들기 →</Link>
+      </footer>
     </div>
   );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id: param } = await params;
+  const p = await getPublicProfile(param); // 페이지와 같은 요청 안에서는 한 번만 조회
+  const name = p?.eng_name || "Model";
+  return {
+    title: `${name} · Portfolio | myfolio`,
+    description: p?.height ? `${name} · ${p.height}cm — 컴카드·사진·영상 포트폴리오` : `${name}의 모델 포트폴리오`,
+    openGraph: { title: `${name} · Portfolio`, description: "myfolio 모델 포트폴리오", type: "profile" as const },
+    twitter: { card: "summary_large_image" as const },
+  };
 }
 
 const pillStyle: React.CSSProperties = {

@@ -6,8 +6,15 @@ import Nav from "../components/Nav";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useT } from "../components/LocaleProvider";
+import { FEATURES } from "@/lib/features";
+import SubscriptionSection from "./SubscriptionSection";
+import ShareButtons from "../components/ShareButtons";
+import MyCardQR from "./MyCardQR";
+import DeleteAccount from "./DeleteAccount";
+import { Capacitor } from "@capacitor/core";
+import { isReservedSlug, profilePath } from "@/lib/slug";
 
-type CompCard = { id: string; title: string; canvas_type: string; created_at: string; };
+type CompCard = { id: string; title: string; canvas_type: string; created_at: string; is_featured: boolean | null; };
 
 function YearDropdown({ value, onChange, inputStyle }: { value: number | null; onChange: (y: number) => void; inputStyle: React.CSSProperties }) {
   const [open, setOpen] = useState(false);
@@ -121,6 +128,7 @@ export default function MyPage() {
   const [user,      setUser]      = useState<User | null>(null);
   const [profile,   setProfile]   = useState<Profile | null>(null);
   const [compCards, setCompCards] = useState<CompCard[]>([]);
+  const [photoCount, setPhotoCount] = useState(0);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [slugInput,  setSlugInput]  = useState("");
@@ -149,10 +157,32 @@ export default function MyPage() {
         setProfile(empty);
       }
 
-      const { data: cards } = await supabase.from("comp_cards").select("id, title, canvas_type, created_at").order("created_at", { ascending: false });
+      const { data: cards } = await supabase.from("comp_cards").select("id, title, canvas_type, created_at, is_featured").order("created_at", { ascending: false });
       if (cards) setCompCards(cards);
+
+      // 내 포트폴리오 사진 수
+      const { count: photos } = await supabase.from("snaps").select("id", { count: "exact", head: true }).eq("user_id", u.id);
+      setPhotoCount(photos ?? 0);
     })();
   }, []);
+
+  // 컴카드 공개/비공개 (무료 회원은 1장까지 — 서버에서 확인)
+  const togglePublish = async (card: CompCard) => {
+    const res = await fetch("/api/comcard/publish", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardId: card.id, publish: !card.is_featured }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (res.status === 402) {
+        if (Capacitor.isNativePlatform()) alert(j.error); // 앱 안에서는 외부 결제 안내 금지
+        else if (confirm(`${j.error}\nPro 요금제를 볼까요?`)) router.push("/pricing");
+      }
+      else if (res.status !== 402) alert(j.error ?? "처리하지 못했어요.");
+      return;
+    }
+    setCompCards(prev => prev.map(c => c.id === card.id ? { ...c, is_featured: j.published } : c));
+  };
 
   const update = (field: keyof Profile, value: string | number | boolean | string[] | null) => {
     setProfile(prev => prev ? { ...prev, [field]: value } : prev);
@@ -171,11 +201,11 @@ export default function MyPage() {
   const saveSlug = async () => {
     const val = slugInput.trim().toLowerCase();
     if (!val) return;
-    if (!/^[a-z0-9-]+$/.test(val)) { setSlugStatus("invalid"); return; }
+    if (!/^[a-z0-9-]+$/.test(val) || val.length < 2 || isReservedSlug(val)) { setSlugStatus("invalid"); return; }
     setSlugStatus("checking");
-    const { data } = await supabase.from("profiles").select("id").eq("slug", val).single();
-    if (data && data.id !== user!.id) { setSlugStatus("taken"); return; }
-    await supabase.from("profiles").update({ slug: val }).eq("id", user!.id);
+    // 중복은 데이터베이스(고유 주소 규칙)가 막아줌 — 남의 프로필은 읽을 수 없으므로 저장 결과로 판단
+    const { error } = await supabase.from("profiles").update({ slug: val }).eq("id", user!.id);
+    if (error) { setSlugStatus(error.code === "23505" ? "taken" : "invalid"); return; }
     setProfile(prev => prev ? { ...prev, slug: val } : prev);
     setSlugStatus("ok");
     setTimeout(() => setSlugStatus("idle"), 2500);
@@ -187,7 +217,7 @@ export default function MyPage() {
     </div>
   );
 
-  const portfolioUrl = `/model/${profile.slug ?? user?.id}`;
+  const portfolioUrl = profilePath(profile.slug, user?.id ?? profile.id);
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
@@ -203,7 +233,7 @@ export default function MyPage() {
             </h1>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {FEATURES.gallery && <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "12px", color: "var(--muted)" }}>{t.mypage.galleryPublic}</span>
               <button onClick={() => update("is_public", !profile.is_public)} style={{
                 width: "40px", height: "22px", borderRadius: "11px", border: "none",
@@ -217,7 +247,7 @@ export default function MyPage() {
                   background: "#fff", transition: "left 0.2s",
                 }} />
               </button>
-            </div>
+            </div>}
             <Link href={portfolioUrl} target="_blank" style={{
               fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase",
               color: "var(--muted)", textDecoration: "none",
@@ -236,7 +266,7 @@ export default function MyPage() {
           </p>
           <div style={{ display: "flex", gap: "0", alignItems: "stretch" }}>
             <span style={{ ...inputStyle, width: "auto", background: "var(--surface)", color: "var(--muted)", borderRight: "none", display: "flex", alignItems: "center", padding: "10px 12px", fontSize: "13px", whiteSpace: "nowrap" }}>
-              myfolio.com/model/
+              myfolio.com/
             </span>
             <input
               style={{ ...inputStyle, flex: 1, borderRadius: 0 }}
@@ -255,6 +285,13 @@ export default function MyPage() {
           {slugStatus === "taken"   && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{t.mypage.slugTaken}</p>}
           {slugStatus === "invalid" && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{t.mypage.slugInvalid}</p>}
           {slugStatus === "checking"&& <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>{t.mypage.slugChecking}</p>}
+          <div style={{ marginTop: "16px", maxWidth: "360px" }}>
+            <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "8px" }}>내 디지털 명함을 클라이언트·에이전시에 보내보세요</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <ShareButtons path={portfolioUrl} title={`${profile.eng_name || "모델"} · myfolio`} text="모델 디지털 명함을 확인해 보세요" />
+              <MyCardQR path={portfolioUrl} name={profile.eng_name ?? ""} />
+            </div>
+          </div>
         </section>
 
         {/* ── 프로필 정보 ── */}
@@ -352,6 +389,9 @@ export default function MyPage() {
           </div>
         </section>
 
+        {/* ── 요금제 ── */}
+        <SubscriptionSection />
+
         {/* ── 컴카드 관리 ── */}
         <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
@@ -374,16 +414,48 @@ export default function MyPage() {
                       {card.canvas_type === "portrait" ? "세로형" : "가로형"}
                     </span>
                   </div>
-                  <p style={{ fontSize: "13px", marginBottom: "4px" }}>{card.title}</p>
+                  <p style={{ fontSize: "13px", marginBottom: "4px", display: "flex", justifyContent: "space-between", gap: "6px" }}>
+                    <span>{card.title}</span>
+                    <span style={{ fontSize: "10px", color: card.is_featured ? "#2a7a3a" : "var(--muted)", whiteSpace: "nowrap" }}>{card.is_featured ? "● 공개" : "비공개"}</span>
+                  </p>
                   <p style={{ fontSize: "11px", color: "var(--muted)" }}>{new Date(card.created_at).toLocaleDateString("ko-KR")}</p>
                   <div style={{ display: "flex", gap: "6px", marginTop: "12px" }}>
                     <Link href={`/comcard?id=${card.id}`} style={{ fontSize: "11px", background: "var(--text)", color: "#fff", border: "none", padding: "6px 10px", cursor: "pointer", textDecoration: "none" }}>{t.mypage.edit}</Link>
-                    <button onClick={async () => { await createClient().from("comp_cards").delete().eq("id", card.id); setCompCards(prev => prev.filter(c => c.id !== card.id)); }} style={{ fontSize: "11px", color: "var(--muted)", background: "none", border: "1px solid var(--border)", padding: "6px 10px", cursor: "pointer" }}>{t.mypage.delete}</button>
+                    <button onClick={() => togglePublish(card)} style={{ fontSize: "11px", color: "var(--text)", background: "none", border: "1px solid var(--border)", padding: "6px 10px", cursor: "pointer" }}>{card.is_featured ? "비공개로" : "공개하기"}</button>
+                    <Link href={`/card/${card.id}`} style={{ fontSize: "11px", color: "var(--text)", border: "1px solid var(--border)", padding: "6px 10px", textDecoration: "none" }}>보기</Link>
+                    <button onClick={async () => { if (!confirm("이 컴카드를 삭제할까요?")) return; await createClient().from("comp_cards").delete().eq("id", card.id); setCompCards(prev => prev.filter(c => c.id !== card.id)); }} style={{ fontSize: "11px", color: "var(--muted)", background: "none", border: "1px solid var(--border)", padding: "6px 10px", cursor: "pointer" }}>{t.mypage.delete}</button>
                   </div>
+                  {card.is_featured && (
+                    <div style={{ marginTop: "8px" }}>
+                      <ShareButtons compact path={`/card/${card.id}`} title={`${card.title} · 컴카드`} text="myfolio로 만든 컴카드를 확인해 보세요" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
+        </section>
+
+        {/* ── 내 포트폴리오 (갤러리·스냅·영상·경력) — 내 명함 페이지에만 보이고, 전체 공개 갤러리에는 올라가지 않음 ── */}
+        <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
+          <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "8px" }}>내 포트폴리오</h2>
+          <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "18px", lineHeight: 1.6 }}>
+            올린 사진·영상은 내 명함 링크를 받은 사람만 볼 수 있어요. 모델 목록(공개 갤러리)에는 올라가지 않아요. Pro 전용이며, 구독이 끝나면 지워지지 않고 숨겨져요.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+            {([
+              { tab: "photos",  label: "사진",   sub: `${photoCount}장 · 촬영 컨셉별 정리` },
+              { tab: "video",   label: "영상",   sub: `${profile.video_urls.length}개` },
+              { tab: "career",  label: "경력",   sub: "작성·수정" },
+            ] as const).map(it => (
+              <Link key={it.tab} href={`${portfolioUrl}?edit=${it.tab}`} style={{
+                display: "block", border: "1px solid var(--border)", padding: "14px 16px", textDecoration: "none", color: "var(--text)", background: "#fff",
+              }}>
+                <span style={{ display: "block", fontSize: "14px", fontWeight: 500, marginBottom: "2px" }}>{it.label} 관리 →</span>
+                <span style={{ fontSize: "12px", color: "var(--muted)" }}>{it.sub}</span>
+              </Link>
+            ))}
+          </div>
         </section>
 
         {/* 저장 */}
@@ -396,6 +468,8 @@ export default function MyPage() {
             {saved ? t.mypage.saved : saving ? t.mypage.saving : t.mypage.saveProfile}
           </button>
         </div>
+
+        <DeleteAccount />
       </div>
     </div>
   );

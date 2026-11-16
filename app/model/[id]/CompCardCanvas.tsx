@@ -1,4 +1,5 @@
 "use client";
+import { isContactField, isStatsField } from "@/lib/comcard-layouts";
 
 type PhotoItem  = { id: number; src: string | null; x: number; y: number; w: number; h?: number };
 type TextBlock  = { id: string; tag: "name" | "korName" | "stats" | "contact"; x: number; y: number; fontSize: number };
@@ -9,6 +10,7 @@ type CardData = {
   txtColor?: string;
   fontWeight?: number;
   statsLayout?: "1단" | "2단";
+  nameCaps?: boolean;
   fields?: Field[];
   enabledFields?: Field[] | string[];
   photos?: PhotoItem[];
@@ -34,13 +36,14 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHe
   const txtColor    = data.txtColor   ?? "#111";
   const fontWeight  = data.fontWeight ?? 400;
   const statsLayout = data.statsLayout ?? "1단";
+  const nameCaps    = data.nameCaps ?? false;
   const photos      = data.photos     ?? [];
   const textBlocks  = data.textBlocks ?? [];
   const rawFields = data.fields ?? data.enabledFields ?? [];
   const fields = (Array.isArray(rawFields) && rawFields.length > 0 && typeof rawFields[0] === "object" ? rawFields : []) as Field[];
 
-  const statsFields   = fields.filter(d => !["English Name","Korean Name","Instagram","Email","Phone"].includes(d.label));
-  const contactFields = fields.filter(d => ["Instagram","Email","Phone"].includes(d.label));
+  const statsFields   = fields.filter(d => isStatsField(d.label));
+  const contactFields = fields.filter(d => isContactField(d.label));
   const nameField     = fields.find(d => d.label === "English Name");
   const korNameField  = fields.find(d => d.label === "Korean Name");
 
@@ -76,7 +79,7 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHe
         {/* English Name */}
         {nameField && nameBlock && (
           <div style={{ position: "absolute", left: nameBlock.x, top: nameBlock.y, pointerEvents: "none" }}>
-            <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap" }}>
+            <span className="font-display" style={{ fontSize: nameBlock.fontSize, fontWeight, color: txtColor, display: "block", lineHeight: 1.1, whiteSpace: "nowrap", textTransform: nameCaps ? "uppercase" : "none", letterSpacing: nameCaps ? "0.04em" : undefined }}>
               {nameField.value}
             </span>
           </div>

@@ -1,36 +1,21 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { startOAuth } from "@/lib/oauth";
+import { safeNext } from "@/lib/safe-next";
+import AppleLoginButton from "../components/AppleLoginButton";
 import Link from "next/link";
 import { useT } from "../components/LocaleProvider";
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/comcard";
+  const next = safeNext(searchParams.get("next"), "/comcard");
   const error = searchParams.get("error");
   const errorMsg = searchParams.get("msg");
   const t = useT();
 
-  const supabase = createClient();
-
-  const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-  };
-
-  const signInWithKakao = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-  };
+  const signInWithGoogle = () => startOAuth("google", next);
+  const signInWithKakao  = () => startOAuth("kakao", next);
 
   return (
     <div style={{
@@ -101,13 +86,15 @@ function LoginContent() {
             </svg>
             {t.login.continueWithKakao}
           </button>
+
+          <AppleLoginButton next={next} label={t.login.continueWithApple} />
         </div>
 
         <p style={{ marginTop: "32px", fontSize: "12px", color: "#aaa", textAlign: "center", lineHeight: 1.7 }}>
           {t.login.termsNote.split(t.login.terms)[0]}
-          <span style={{ textDecoration: "underline", cursor: "pointer" }}>{t.login.terms}</span>
+          <Link href="/terms" style={{ textDecoration: "underline", color: "inherit" }}>{t.login.terms}</Link>
           {t.login.termsNote.split(t.login.terms)[1]?.split(t.login.privacy)[0]}
-          <span style={{ textDecoration: "underline", cursor: "pointer" }}>{t.login.privacy}</span>
+          <Link href="/privacy" style={{ textDecoration: "underline", color: "inherit" }}>{t.login.privacy}</Link>
           {t.login.termsNote.split(t.login.privacy)[1]}
         </p>
       </div>

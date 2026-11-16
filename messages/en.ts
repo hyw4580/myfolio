@@ -2,6 +2,7 @@ const en = {
   nav: {
     gallery: "Gallery",
     compCard: "Comp Card",
+    pricing: "Pricing",
     contact: "Contact",
     myPage: "My Page",
     logout: "Logout",
@@ -23,6 +24,7 @@ const en = {
     becomeModel: {
       title: "Show Yourself\nto the World",
       subtitle: "Create your own comp card and share your portfolio with a unique link. You can also register in the gallery so clients can find you.",
+      subtitleNoGallery: "Create your own comp card and share your portfolio with a unique link.",
       step1: "Create a comp card with your info and photos",
       step2: "Share your portfolio with a unique link",
       step3: "Go public and get discovered through the gallery",
@@ -43,6 +45,7 @@ const en = {
     subtitle: "Sign in to create your comp card",
     continueWithGoogle: "Continue with Google",
     continueWithKakao: "Continue with Kakao",
+    continueWithApple: "Continue with Apple",
     error: "Sign in failed. Please try again.",
     termsNote: "By continuing, you agree to myfolio's Terms of Service and Privacy Policy.",
     terms: "Terms of Service",
@@ -55,7 +58,7 @@ const en = {
     loginLink: "Sign In",
     steps: {
       account: "Account Info",
-      accountSub: "Enter the basic info you'll use to log in.",
+      accountSub: "Sign up in one click with your Google or Kakao account.",
       profile: "Profile Info",
       profileSub: "This info will be used in your comp card. You can update it anytime.",
       measurements: "Body Info",
@@ -66,6 +69,10 @@ const en = {
     complete: "Complete Sign Up",
     summary: "Summary",
     passwordPlaceholder: "8 or more characters",
+    saving: "Saving...",
+    saveError: "Couldn't save. Please try again.",
+    nameRequired: "Please enter your English name.",
+    loggedInAs: "Signed in as",
   },
   mypage: {
     loading: "Loading...",
@@ -89,7 +96,7 @@ const en = {
     delete: "Delete",
     slugOk: "✓ Saved",
     slugTaken: "This URL is already taken",
-    slugInvalid: "Only lowercase letters, numbers, and hyphens allowed",
+    slugInvalid: "Use 2+ lowercase letters, numbers, or hyphens (site page names are reserved)",
     slugChecking: "Checking...",
     labels: {
       engName: "English Name",

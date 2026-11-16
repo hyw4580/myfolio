@@ -2,6 +2,7 @@ const ko = {
   nav: {
     gallery: "Gallery",
     compCard: "Comp Card",
+    pricing: "Pricing",
     contact: "Contact",
     myPage: "My Page",
     logout: "Logout",
@@ -23,6 +24,7 @@ const ko = {
     becomeModel: {
       title: "지금 바로\n나를 알려보세요",
       subtitle: "컴카드를 직접 만들고, 나만의 포트폴리오 링크를 공유하세요. 클라이언트들이 당신을 찾을 수 있도록 갤러리에 등록할 수도 있어요.",
+      subtitleNoGallery: "컴카드를 직접 만들고, 나만의 포트폴리오 링크를 공유하세요.",
       step1: "정보와 사진을 입력해 컴카드를 만드세요",
       step2: "나만의 링크로 포트폴리오를 공유하세요",
       step3: "공개 설정 후 갤러리에 노출되어 섭외를 받으세요",
@@ -44,6 +46,7 @@ const ko = {
     subtitle: "컴카드 제작을 위해 로그인이 필요해요",
     continueWithGoogle: "Google로 계속하기",
     continueWithKakao: "카카오로 계속하기",
+    continueWithApple: "Apple로 계속하기",
     error: "로그인에 실패했어요. 다시 시도해 주세요.",
     termsNote: "계속 진행하면 myfolio의 이용약관과 개인정보처리방침에 동의하게 됩니다.",
     terms: "이용약관",
@@ -56,7 +59,7 @@ const ko = {
     loginLink: "로그인",
     steps: {
       account: "계정 정보",
-      accountSub: "로그인에 사용할 기본 정보를 입력해주세요.",
+      accountSub: "Google 또는 카카오 계정으로 간편하게 가입하세요. 처음 로그인하면 자동으로 가입돼요.",
       profile: "프로필 정보",
       profileSub: "컴카드에 활용될 정보입니다. 나중에 언제든 수정할 수 있어요.",
       measurements: "신체 정보",
@@ -67,6 +70,10 @@ const ko = {
     complete: "가입 완료",
     summary: "입력 요약",
     passwordPlaceholder: "8자 이상",
+    saving: "저장 중...",
+    saveError: "저장에 실패했어요. 다시 시도해 주세요.",
+    nameRequired: "영문 이름을 입력해 주세요.",
+    loggedInAs: "로그인됨",
   },
   mypage: {
     loading: "불러오는 중...",
@@ -90,7 +97,7 @@ const ko = {
     delete: "삭제",
     slugOk: "✓ 저장됐어요",
     slugTaken: "이미 사용 중인 주소예요",
-    slugInvalid: "영문 소문자, 숫자, 하이픈만 입력해주세요",
+    slugInvalid: "영문 소문자·숫자·하이픈 2자 이상으로 입력해주세요 (사이트 메뉴 이름은 쓸 수 없어요)",
     slugChecking: "확인 중...",
     labels: {
       engName: "영문 이름",
