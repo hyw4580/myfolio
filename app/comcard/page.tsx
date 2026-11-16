@@ -167,7 +167,7 @@ function getDefaultTextBlocks(canvas: CanvasType): TextBlock[] {
 }
 
 /* ─────────────── photo element (display only) ───────────────── */
-function PhotoElement({ item, isSelected, isMain, isDark, adjusting }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean; adjusting: boolean }) {
+function PhotoElement({ item, isSelected, isMain, isDark, frameMode }: { item: PhotoItem; isSelected: boolean; isMain: boolean; isDark: boolean; frameMode: boolean }) {
   const ph = item.h;
   const base: React.CSSProperties = { position: "absolute", background: "#fff", border: "1px solid #0066FF", zIndex: 30, pointerEvents: "none" };
   const corner: React.CSSProperties = { ...base, width: 6, height: 6 };
@@ -176,8 +176,8 @@ function PhotoElement({ item, isSelected, isMain, isDark, adjusting }: { item: P
   return (
     <div style={{
       position: "absolute", left: item.x, top: item.y, width: item.w, height: ph,
-      cursor: adjusting ? "grab" : "move", userSelect: "none",
-      outline: adjusting ? "2px dashed #FF7A00" : isSelected ? "1px solid rgba(0,102,255,0.7)" : "1px solid rgba(0,0,0,0.08)",
+      cursor: frameMode ? "move" : item.src ? "grab" : "pointer", userSelect: "none",
+      outline: frameMode ? "1px solid rgba(0,102,255,0.9)" : isSelected ? "2px dashed #FF7A00" : "1px solid rgba(0,0,0,0.08)",
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
@@ -187,7 +187,7 @@ function PhotoElement({ item, isSelected, isMain, isDark, adjusting }: { item: P
             <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: isDark ? "#555" : "#A8A49F" }}>{isMain ? "Main" : `Photo`}</span>
           </div>
       }
-      {isSelected && !adjusting && (
+      {isSelected && frameMode && (
         <>
           <div style={{ ...corner, top: -3, left: -3 }} />
           <div style={{ ...corner, top: -3, right: -3 }} />
@@ -270,9 +270,10 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
   userZoomRef: React.RefObject<number>;
 }) {
   const [selectedId, setSelectedId]   = useState<number | null>(null);
-  const [adjustId, setAdjustId]       = useState<number | null>(null); // 칸 안 사진 조정 중인 사진
-  const adjustIdRef    = useRef<number | null>(null);
-  useEffect(() => { adjustIdRef.current = adjustId; }, [adjustId]);
+  // 기본: 사진을 끌면 칸(틀)은 그대로, 칸 안의 사진만 이동. 틀을 옮기거나 크기를 바꾸려면 [틀 조정]
+  const [frameId, setFrameId]         = useState<number | null>(null);
+  const frameIdRef     = useRef<number | null>(null);
+  useEffect(() => { frameIdRef.current = frameId; }, [frameId]);
   const [snapLines, setSnapLines]     = useState<SnapLines>({ xs: [], ys: [] });
   const dragRef        = useRef<DragState>(null);
   const movedRef       = useRef(false); // 실제로 끌었는지 (클릭만 한 건 편집으로 안 셈)
@@ -325,10 +326,11 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       // 배경 터치 → preventDefault 없음 → 페이지 스크롤 허용
     };
     el.addEventListener("touchstart", handler, { passive: false });
-    // 사진 조정 중엔 휠로 칸 안 사진 확대·축소 (Ctrl+휠은 화면 확대로 그대로)
+    // 사진을 선택하면 휠로 칸 안 사진 확대·축소 (틀 조정 중이거나 Ctrl+휠은 제외)
     const onWheel = (e: WheelEvent) => {
-      const id = adjustIdRef.current;
-      if (id === null || e.ctrlKey) return;
+      const id = selectedIdRef.current;
+      if (id === null || e.ctrlKey || frameIdRef.current === id) return;
+      if (!photosRef.current.find(p => p.id === id)?.src) return;
       e.preventDefault();
       setPhotos(p => p.map(p2 => p2.id === id ? { ...p2, ...zoomCrop(p2, normCrop(p2).zoom * (1 - e.deltaY * 0.002)) } : p2));
     };
@@ -586,22 +588,13 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
     const cx = (clientX - rect.left) / effectiveScale;
     const cy = (clientY - rect.top) / effectiveScale;
 
-    // 사진 조정 중: 그 사진 안을 끌면 칸 안에서 사진만 이동, 밖을 누르면 조정 끝
-    if (adjustId !== null) {
-      const ap = photos.find(p => p.id === adjustId);
-      if (ap && cx >= ap.x && cx <= ap.x + ap.w && cy >= ap.y && cy <= ap.y + ap.h) {
-        dragRef.current = { type: "photo-pan", id: ap.id, mx: clientX, my: clientY, start: normCrop(ap), fw: ap.w, fh: ap.h };
-        return;
-      }
-      setAdjustId(null);
-    }
-    // Resize handles of selected photo (corners + edges)
-    if (selectedId !== null) {
-      const sel = photos.find(p => p.id === selectedId);
+    // 틀 조정 중인 사진의 크기 핸들
+    if (frameId !== null) {
+      const sel = photos.find(p => p.id === frameId);
       if (sel) {
         for (const { handle, x: hx, y: hy } of getHandles(sel)) {
           if (Math.abs(cx - hx) <= RESIZE_ZONE && Math.abs(cy - hy) <= RESIZE_ZONE) {
-            dragRef.current = { type: "photo-resize", id: selectedId, mx: clientX, my: clientY, ow: sel.w, oh: sel.h, ox: sel.x, oy: sel.y, handle };
+            dragRef.current = { type: "photo-resize", id: sel.id, mx: clientX, my: clientY, ow: sel.w, oh: sel.h, ox: sel.x, oy: sel.y, handle };
             return;
           }
         }
@@ -613,11 +606,18 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       const ph = p.h;
       if (cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + ph) {
         setSelectedId(p.id);
-        dragRef.current = { type: "photo-move", id: p.id, mx: clientX, my: clientY, ox: p.x, oy: p.y };
+        if (p.id === frameId) {
+          // 틀 조정 중: 틀 자체를 옮김
+          dragRef.current = { type: "photo-move", id: p.id, mx: clientX, my: clientY, ox: p.x, oy: p.y };
+        } else {
+          setFrameId(null);
+          // 기본: 칸 안의 사진만 이동 (빈 칸은 선택만)
+          dragRef.current = p.src ? { type: "photo-pan", id: p.id, mx: clientX, my: clientY, start: normCrop(p), fw: p.w, fh: p.h } : null;
+        }
         return;
       }
     }
-    setSelectedId(null);
+    setSelectedId(null); setFrameId(null);
   };
 
   /* Field lookups */
@@ -640,14 +640,14 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
         const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
         const es = scale * (userZoomRef.current ?? 1);
         const cx = (e.clientX - rect.left) / es, cy = (e.clientY - rect.top) / es;
-        const hit = [...photos].reverse().find(p => p.src && cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
-        if (hit) { setSelectedId(hit.id); setAdjustId(hit.id); }
+        const hit = [...photos].reverse().find(p => cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
+        if (hit) { setSelectedId(hit.id); setFrameId(hit.id); } // 더블클릭: 틀 조정
       }}
       style={{ position: "absolute", top: 0, left: 0, width: w, height: h, background: bgColor, flexShrink: 0, boxShadow: "0 4px 32px rgba(0,0,0,0.14)", overflow: "visible", transformOrigin: "top left", transform: `scale(${scale})` }}
     >
       {/* Photos */}
       {photos.map((item, idx) => (
-        <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} adjusting={adjustId === item.id} />
+        <PhotoElement key={item.id} item={item} isSelected={selectedId === item.id} isMain={idx === 0} isDark={bgColor === "#0C0C0C"} frameMode={frameId === item.id} />
       ))}
 
       {/* 안전 영역 가이드 — 저장/출력 시 제외되는 표시용 선 */}
@@ -741,26 +741,30 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
         </TextElement>
       )}
     </div>
-    {/* 선택한 사진 아래 도구: 칸 안 사진 위치·크기 조정 (캔버스 밖이라 다운로드 이미지에 안 찍힘) */}
+    {/* 선택한 사진 아래 도구: 기본은 칸 안 사진 위치·크기, [틀 조정]으로 틀 이동·크기 (캔버스 밖이라 다운로드 이미지에 안 찍힘) */}
     {(() => {
-      const sel = photos.find(p => p.id === (adjustId ?? selectedId));
-      if (!sel?.src) return null;
+      const sel = photos.find(p => p.id === selectedId);
+      if (!sel) return null;
       const c = normCrop(sel);
       const set = (next: PhotoCrop) => setPhotos(p => p.map(p2 => p2.id === sel.id ? { ...p2, ...next } : p2));
       const btn: React.CSSProperties = { padding: "5px 9px", fontSize: "11px", border: "1px solid #ddd", background: "#fff", color: "#111", cursor: "pointer", lineHeight: 1 };
       const top = Math.min((sel.y + sel.h) * scale + 6, h * scale - 34);
+      const inFrame = frameId === sel.id;
       return (
         <div onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}
           style={{ position: "absolute", left: Math.max(0, sel.x * scale), top, zIndex: 50, display: "flex", gap: "4px", alignItems: "center", background: "rgba(255,255,255,0.96)", boxShadow: "0 2px 10px rgba(0,0,0,0.15)", padding: "4px", whiteSpace: "nowrap" }}>
-          {adjustId !== sel.id ? (
-            <button style={btn} onClick={() => setAdjustId(sel.id)}>사진 조정</button>
-          ) : <>
-            <span style={{ fontSize: "10px", color: "#FF7A00", padding: "0 4px" }}>끌어서 위치</span>
-            <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom - 0.1)); tallyEdit("photo_crop"); }} aria-label="축소">−</button>
-            <input type="range" min={1} max={MAX_ZOOM} step={0.05} value={c.zoom} onChange={e => set(zoomCrop(sel, Number(e.target.value)))} onMouseUp={() => tallyEdit("photo_crop")} onTouchEnd={() => tallyEdit("photo_crop")} style={{ width: 90 }} aria-label="확대" />
-            <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom + 0.1)); tallyEdit("photo_crop"); }} aria-label="확대">+</button>
-            <button style={btn} onClick={() => { set({ fx: undefined, fy: undefined, zoom: undefined }); tallyEdit("photo_crop"); }}>맞춤</button>
-            <button style={{ ...btn, background: "#111", color: "#fff", border: "none" }} onClick={() => setAdjustId(null)}>완료</button>
+          {inFrame ? <>
+            <span style={{ fontSize: "10px", color: "#0066FF", padding: "0 4px" }}>틀을 끌어 이동 · 모서리로 크기</span>
+            <button style={{ ...btn, background: "#111", color: "#fff", border: "none" }} onClick={() => setFrameId(null)}>완료</button>
+          </> : <>
+            {sel.src ? <>
+              <span style={{ fontSize: "10px", color: "#FF7A00", padding: "0 4px" }}>사진을 끌어 위치</span>
+              <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom - 0.1)); tallyEdit("photo_crop"); }} aria-label="사진 축소">−</button>
+              <input type="range" min={1} max={MAX_ZOOM} step={0.05} value={c.zoom} onChange={e => set(zoomCrop(sel, Number(e.target.value)))} onMouseUp={() => tallyEdit("photo_crop")} onTouchEnd={() => tallyEdit("photo_crop")} style={{ width: 90 }} aria-label="사진 크기" />
+              <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom + 0.1)); tallyEdit("photo_crop"); }} aria-label="사진 확대">+</button>
+              <button style={btn} onClick={() => { set({ fx: undefined, fy: undefined, zoom: undefined }); tallyEdit("photo_crop"); }}>맞춤</button>
+            </> : <span style={{ fontSize: "10px", color: "#888", padding: "0 4px" }}>빈 칸</span>}
+            <button style={{ ...btn, color: "#555" }} onClick={() => setFrameId(sel.id)}>틀 조정</button>
           </>}
         </div>
       );
@@ -1291,8 +1295,9 @@ function ControlsPanel({ canvas, bgColor, setBgColor, txtColor, setTxtColor, fon
       </button>
 
       <div style={{ fontSize: "11px", color: "var(--muted)", lineHeight: 1.8, borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
-        <p>사진 클릭 → 이동 (자동 스냅)</p>
-        <p>선택한 사진의 <strong style={{ color: "var(--text)" }}>모서리·변 핸들</strong> 드래그 → 크기 조절</p>
+        <p>사진을 끌기 → 칸 안에서 사진 위치 이동</p>
+        <p>사진 아래 슬라이더·마우스 휠 → 사진 크기</p>
+        <p>[틀 조정] 또는 더블클릭 → 칸(틀) 이동·크기 조절</p>
         <p>텍스트 호버 후 드래그 → 이동</p>
       </div>
     </div>
