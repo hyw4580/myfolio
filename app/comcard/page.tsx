@@ -273,6 +273,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
   // 기본: 사진을 끌면 칸(틀)은 그대로, 칸 안의 사진만 이동. 틀을 옮기거나 크기를 바꾸려면 [틀 조정]
   const [frameId, setFrameId]         = useState<number | null>(null);
   const frameIdRef     = useRef<number | null>(null);
+  const photoPinchRef  = useRef<{ id: number; d0: number; z0: number } | null>(null); // 사진 위 두 손가락 확대
   useEffect(() => { frameIdRef.current = frameId; }, [frameId]);
   const [snapLines, setSnapLines]     = useState<SnapLines>({ xs: [], ys: [] });
   const dragRef        = useRef<DragState>(null);
@@ -326,6 +327,42 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       // 배경 터치 → preventDefault 없음 → 페이지 스크롤 허용
     };
     el.addEventListener("touchstart", handler, { passive: false });
+
+    // 휴대폰: 사진 위에서 두 손가락을 벌리고 오므리면 그 사진만 칸 안에서 확대·축소
+    // (사진 밖에서 하면 기존처럼 카드 화면 확대 — 여기서 이벤트를 멈춰 위로 안 올라가게)
+    const dist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const toCanvas = (x: number, y: number) => {
+      const rect = el.getBoundingClientRect();
+      const s = scaleRefOuter.current * (userZoomRef.current ?? 1);
+      return { cx: (x - rect.left) / s, cy: (y - rect.top) / s };
+    };
+    const onPinchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || frameIdRef.current !== null) return;
+      const { cx, cy } = toCanvas((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+      const list = photosRef.current;
+      const hit = [...list].reverse().find(p => p.src && cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
+      if (!hit) return;
+      e.preventDefault(); e.stopPropagation();
+      dragRef.current = null; // 한 손가락으로 시작한 끌기는 취소
+      photoPinchRef.current = { id: hit.id, d0: dist(e.touches), z0: normCrop(hit).zoom };
+      setSelectedId(hit.id);
+    };
+    const onPinchMove = (e: TouchEvent) => {
+      const pin = photoPinchRef.current;
+      if (!pin || e.touches.length !== 2) return;
+      e.preventDefault(); e.stopPropagation();
+      const z = pin.z0 * dist(e.touches) / pin.d0;
+      setPhotos(p => p.map(p2 => p2.id === pin.id ? { ...p2, ...zoomCrop(p2, z) } : p2));
+    };
+    const onPinchEnd = (e: TouchEvent) => {
+      if (!photoPinchRef.current || e.touches.length >= 2) return;
+      e.stopPropagation();
+      photoPinchRef.current = null;
+      tallyEdit("photo_crop");
+    };
+    el.addEventListener("touchstart", onPinchStart, { passive: false });
+    el.addEventListener("touchmove", onPinchMove, { passive: false });
+    el.addEventListener("touchend", onPinchEnd);
     // 사진을 선택하면 휠로 칸 안 사진 확대·축소 (틀 조정 중이거나 Ctrl+휠은 제외)
     const onWheel = (e: WheelEvent) => {
       const id = selectedIdRef.current;
@@ -335,7 +372,10 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
       setPhotos(p => p.map(p2 => p2.id === id ? { ...p2, ...zoomCrop(p2, normCrop(p2).zoom * (1 - e.deltaY * 0.002)) } : p2));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => { el.removeEventListener("touchstart", handler); el.removeEventListener("wheel", onWheel); };
+    return () => {
+      el.removeEventListener("touchstart", handler); el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchstart", onPinchStart); el.removeEventListener("touchmove", onPinchMove); el.removeEventListener("touchend", onPinchEnd);
+    };
   }, []);
 
   useEffect(() => {
@@ -758,7 +798,7 @@ function CanvasEditor({ canvas, bgColor, txtColor, fontWeight, nameCaps, photos,
             <button style={{ ...btn, background: "#111", color: "#fff", border: "none" }} onClick={() => setFrameId(null)}>완료</button>
           </> : <>
             {sel.src ? <>
-              <span style={{ fontSize: "10px", color: "#FF7A00", padding: "0 4px" }}>사진을 끌어 위치</span>
+              <span style={{ fontSize: "10px", color: "#FF7A00", padding: "0 4px" }}>끌어서 위치 · 두 손가락으로 크기</span>
               <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom - 0.1)); tallyEdit("photo_crop"); }} aria-label="사진 축소">−</button>
               <input type="range" min={1} max={MAX_ZOOM} step={0.05} value={c.zoom} onChange={e => set(zoomCrop(sel, Number(e.target.value)))} onMouseUp={() => tallyEdit("photo_crop")} onTouchEnd={() => tallyEdit("photo_crop")} style={{ width: 90 }} aria-label="사진 크기" />
               <button style={btn} onClick={() => { set(zoomCrop(sel, c.zoom + 0.1)); tallyEdit("photo_crop"); }} aria-label="사진 확대">+</button>
@@ -1296,7 +1336,7 @@ function ControlsPanel({ canvas, bgColor, setBgColor, txtColor, setTxtColor, fon
 
       <div style={{ fontSize: "11px", color: "var(--muted)", lineHeight: 1.8, borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
         <p>사진을 끌기 → 칸 안에서 사진 위치 이동</p>
-        <p>사진 아래 슬라이더·마우스 휠 → 사진 크기</p>
+        <p>사진 위 두 손가락 벌리기(휴대폰)·슬라이더·마우스 휠 → 사진 크기</p>
         <p>[틀 조정] 또는 더블클릭 → 칸(틀) 이동·크기 조절</p>
         <p>텍스트 호버 후 드래그 → 이동</p>
       </div>
