@@ -1531,38 +1531,89 @@ function PhotosStep({ photos, setPhotos, userId, uploading, setUploading, onNext
 }) {
   const filled = photos.filter(p => p.src).length;
   const all = filled === photos.length;
+  const [swapFrom, setSwapFrom] = useState<number | null>(null); // 순서 바꿀 첫 번째 사진
+
+  /** 여러 장 한꺼번에: 고른 순서대로 빈 칸 1, 2, 3…에 채움 (빈 칸이 없으면 1번부터 바꿈) */
+  const addMany = (list: FileList | null) => {
+    if (!list?.length) return;
+    const files = Array.from(list).filter(f => f.type.startsWith("image/"));
+    const empty = photos.filter(p => !p.src);
+    const targets = empty.length ? empty : photos;
+    if (!empty.length && !confirm(`이미 ${photos.length}장이 다 있어요. 1번부터 새 사진으로 바꿀까요?`)) return;
+    if (files.length > targets.length) alert(`${targets.length}장까지만 들어가요. 앞에서부터 ${targets.length}장을 넣을게요.`);
+    files.slice(0, targets.length).forEach((f, i) => uploadPhotoFile(targets[i].id, f, userId, setPhotos, setUploading));
+    track("photo_bulk_upload", { files: files.length, slots: photos.length });
+  };
+
+  /** 두 칸의 사진 맞바꾸기 (칸 번호 = 배치 순서) */
+  const swap = (a: number, b: number) => {
+    setPhotos(prev => {
+      const A = prev.find(p => p.id === a), B = prev.find(p => p.id === b);
+      if (!A || !B) return prev;
+      const pick = (p: PhotoItem) => ({ src: p.src, fx: p.fx, fy: p.fy, zoom: p.zoom });
+      return prev.map(p => p.id === a ? { ...p, ...pick(B) } : p.id === b ? { ...p, ...pick(A) } : p);
+    });
+    setSwapFrom(null);
+  };
+
   return (
     <div style={{ maxWidth: "760px", margin: "0 auto", padding: "60px 24px 80px" }}>
       <h1 className="font-display" style={{ fontSize: "44px", fontWeight: 400, marginBottom: "12px" }}>Upload Photos</h1>
-      <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "8px" }}>사진 {photos.length}장을 올려주세요. 칸을 누르면 사진을 고를 수 있어요.</p>
-      <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "28px", lineHeight: 1.7 }}>
-        얼굴이 잘 보이는 헤드샷 1장과 상반신·전신·옆모습처럼 서로 다른 컷을 섞으면 좋아요. 순서는 상관없어요. 다음 단계에서 AI가 메인 사진을 골라 배치해줘요.
+      <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "8px" }}>사진 {photos.length}장을 올려주세요. 한꺼번에 고르면 고른 순서대로 1번부터 들어가요.</p>
+      <p style={{ color: "var(--muted)", fontSize: "12px", marginBottom: "18px", lineHeight: 1.7 }}>
+        얼굴이 잘 보이는 헤드샷 1장과 상반신·전신·옆모습처럼 서로 다른 컷을 섞으면 좋아요. 1번이 메인 자리예요 (다음 단계에서 AI가 바꿔 추천할 수도 있어요).
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${photos.length <= 4 ? photos.length : 3}, 1fr)`, gap: "12px", marginBottom: "16px" }}>
-        {photos.map((p, i) => (
-          <div key={p.id} style={{ position: "relative" }}>
-            <label style={{ display: "block", aspectRatio: "3/4", cursor: "pointer", background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden" }}>
-              <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => e.target.files?.[0] && uploadPhotoFile(p.id, e.target.files[0], userId, setPhotos, setUploading)} />
-              {p.src
-                ? <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: p.src.startsWith("blob:") ? 0.6 : 1 }} />
-                : <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                    <span style={{ fontSize: "24px", color: "var(--border)" }}>+</span>
-                    <span style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--muted)" }}>{i + 1}</span>
-                  </div>}
-              {p.src?.startsWith("blob:") && (
-                <span style={{ position: "absolute", bottom: 6, left: 6, fontSize: "9px", background: uploading > 0 ? "rgba(0,0,0,0.6)" : "#c00", color: "#fff", padding: "2px 6px" }}>
-                  {uploading > 0 ? "업로드 중..." : "저장 안 됨 · 다시 올려주세요"}
-                </span>
+
+      {/* 여러 장 한꺼번에 */}
+      <label style={{ display: "block", textAlign: "center", padding: "14px", marginBottom: "16px", background: "var(--text)", color: "#fff", fontSize: "12px", letterSpacing: "0.08em", cursor: "pointer" }}>
+        + 사진 {photos.length - filled > 0 ? `${photos.length - filled}장` : ""} 한꺼번에 올리기
+        <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={e => { addMany(e.target.files); e.target.value = ""; }} />
+      </label>
+
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${photos.length <= 4 ? photos.length : 3}, 1fr)`, gap: "12px", marginBottom: "10px" }}>
+        {photos.map((p, i) => {
+          const picking = swapFrom === p.id;
+          const target = swapFrom !== null && swapFrom !== p.id;
+          return (
+            <div key={p.id} style={{ position: "relative" }}>
+              <label style={{ display: "block", aspectRatio: "3/4", cursor: "pointer", background: "var(--surface)", border: picking ? "2px solid #FF7A00" : "1px solid var(--border)", overflow: "hidden" }}
+                onClick={e => { if (target) { e.preventDefault(); swap(swapFrom!, p.id); } }}>
+                <input type="file" accept="image/*" style={{ display: "none" }} disabled={target}
+                  onChange={e => { if (e.target.files?.[0]) uploadPhotoFile(p.id, e.target.files[0], userId, setPhotos, setUploading); e.target.value = ""; }} />
+                {p.src
+                  ? <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: p.src.startsWith("blob:") ? 0.6 : 1 }} />
+                  : <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "24px", color: "var(--border)" }}>+</span>
+                      <span style={{ fontSize: "10px", letterSpacing: "0.1em", color: "var(--muted)" }}>{i === 0 ? "1 · 메인" : i + 1}</span>
+                    </div>}
+                {target && (
+                  <span style={{ position: "absolute", inset: 0, background: "rgba(255,122,0,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#b35600", fontWeight: 600 }}>여기와 바꾸기</span>
+                )}
+                {p.src?.startsWith("blob:") && (
+                  <span style={{ position: "absolute", bottom: 6, left: 6, fontSize: "9px", background: uploading > 0 ? "rgba(0,0,0,0.6)" : "#c00", color: "#fff", padding: "2px 6px" }}>
+                    {uploading > 0 ? "업로드 중..." : "저장 안 됨 · 다시 올려주세요"}
+                  </span>
+                )}
+              </label>
+              {/* 칸 번호 */}
+              {p.src && <span style={{ position: "absolute", top: 6, left: 6, minWidth: 20, height: 20, padding: "0 5px", background: i === 0 ? "#111" : "rgba(0,0,0,0.55)", color: "#fff", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>{i === 0 ? "1 메인" : i + 1}</span>}
+              {p.src && swapFrom === null && (
+                <button onClick={() => setPhotos(prev => prev.map(q => q.id === p.id ? { ...q, src: null } : q))} aria-label="사진 빼기"
+                  style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", cursor: "pointer", fontSize: "13px", lineHeight: 1 }}>×</button>
               )}
-            </label>
-            {p.src && (
-              <button onClick={() => setPhotos(prev => prev.map(q => q.id === p.id ? { ...q, src: null } : q))}
-                style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", cursor: "pointer", fontSize: "13px", lineHeight: 1 }}>×</button>
-            )}
-          </div>
-        ))}
+              {p.src && filled > 1 && (
+                <button onClick={() => setSwapFrom(picking ? null : p.id)}
+                  style={{ display: "block", width: "100%", marginTop: "4px", padding: "6px", fontSize: "11px", cursor: "pointer", border: `1px solid ${picking ? "#FF7A00" : "var(--border)"}`, background: picking ? "#FF7A00" : "#fff", color: picking ? "#fff" : "var(--muted)" }}>
+                  {picking ? "취소" : "순서 바꾸기"}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
-      <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "28px" }}>{filled} / {photos.length}장{uploading > 0 ? ` · 업로드 중 ${uploading}장` : ""}</p>
+      <p style={{ fontSize: "12px", color: swapFrom !== null ? "#b35600" : "var(--muted)", marginBottom: "28px" }}>
+        {swapFrom !== null ? "바꿀 다른 칸을 누르세요" : `${filled} / ${photos.length}장${uploading > 0 ? ` · 업로드 중 ${uploading}장` : ""} · 칸을 누르면 한 장씩 바꿀 수 있어요`}
+      </p>
       <div style={{ display: "flex", gap: "10px" }}>
         <button onClick={onBack} style={{ flex: 1, background: "#fff", color: "var(--text)", border: "1px solid var(--border)", padding: "15px", fontSize: "11px", letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer" }}>← Back</button>
         <button onClick={onNext} disabled={uploading > 0}
