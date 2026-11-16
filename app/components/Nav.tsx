@@ -68,7 +68,7 @@ export default function Nav() {
         <div className="nav-desktop" style={{ display: "flex", gap: "40px", alignItems: "center" }}>
           {FEATURES.gallery && <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}>{t.nav.gallery}</Link>}
           <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}>{t.nav.compCard}</Link>
-          {!inApp && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}>{t.nav.pricing}</Link>}
+          {!inApp && FEATURES.paywall && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}>{t.nav.pricing}</Link>}
           {FEATURES.contact && <Link href="/#contact" style={linkStyle()}>{t.nav.contact}</Link>}
           <FeedbackButton style={linkStyle()} />
           {user ? (
@@ -108,7 +108,7 @@ export default function Nav() {
         }}>
           {FEATURES.gallery && <Link href="/gallery"  style={linkStyle(pathname === "/gallery")}  onClick={() => setMenuOpen(false)}>{t.nav.gallery}</Link>}
           <Link href="/comcard"  style={linkStyle(pathname === "/comcard")}  onClick={() => setMenuOpen(false)}>{t.nav.compCard}</Link>
-          {!inApp && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}  onClick={() => setMenuOpen(false)}>{t.nav.pricing}</Link>}
+          {!inApp && FEATURES.paywall && <Link href="/pricing"  style={linkStyle(pathname === "/pricing")}  onClick={() => setMenuOpen(false)}>{t.nav.pricing}</Link>}
           {FEATURES.contact && <Link href="/#contact" style={linkStyle()}                         onClick={() => setMenuOpen(false)}>{t.nav.contact}</Link>}
           <FeedbackButton style={{ ...linkStyle(), textAlign: "left" }} />
           {user ? (

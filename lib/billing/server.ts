@@ -2,9 +2,11 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FEATURES } from "@/lib/features";
 
 /** 결제 기능 설정 여부 (토스 키 + Supabase 서버 키) */
 export const billingConfigured = () =>
+  FEATURES.paywall && // 유료 스위치가 꺼져 있으면 키가 있어도 "결제 설정 전"(전부 무료)으로 동작
   !!process.env.TOSS_SECRET_KEY && !!process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /** 로그인 사용자 + 관리자 클라이언트. 실패하면 바로 돌려줄 응답을 같이 반환 */

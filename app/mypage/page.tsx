@@ -440,7 +440,7 @@ export default function MyPage() {
         <section style={{ marginBottom: "48px", paddingBottom: "48px", borderBottom: "1px solid var(--border)" }}>
           <h2 style={{ fontSize: "14px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "8px" }}>내 포트폴리오</h2>
           <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "18px", lineHeight: 1.6 }}>
-            올린 사진·영상은 내 명함 링크를 받은 사람만 볼 수 있어요. 모델 목록(공개 갤러리)에는 올라가지 않아요. Pro 전용이며, 구독이 끝나면 지워지지 않고 숨겨져요.
+            올린 사진·영상은 내 명함 링크를 받은 사람만 볼 수 있어요. 모델 목록(공개 갤러리)에는 올라가지 않아요.{FEATURES.paywall && " Pro 전용이며, 구독이 끝나면 지워지지 않고 숨겨져요."}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
             {([
