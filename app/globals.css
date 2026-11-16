@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-korean: "Noto Serif KR", serif; /* layout.tsx에서 브라우저가 불러옴 */
   --bg: #FFFFFF;
   --surface: #F8F7F4;
   --text: #0A0A0A;

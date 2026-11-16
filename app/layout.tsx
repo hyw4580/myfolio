@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bodoni_Moda, Inter, Noto_Serif_KR } from "next/font/google";
+import { Bodoni_Moda, Inter } from "next/font/google";
 import "./globals.css";
 import { getLocale } from "@/lib/i18n";
 import { LocaleProvider } from "./components/LocaleProvider";
@@ -19,11 +19,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const notoSerifKR = Noto_Serif_KR({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-korean",
-});
+// 한글 세리프(Noto Serif KR)는 파일이 수백 개라 빌드 때 받으면 가끔 실패해서, 방문자 브라우저에서 불러옴 (globals.css의 --font-korean)
 
 /** 공유 링크 미리보기 이미지가 절대 주소를 쓰도록 사이트 주소 지정 (도메인 연결 후 NEXT_PUBLIC_SITE_URL 설정) */
 const siteUrl =
@@ -50,7 +46,13 @@ export default async function RootLayout({
   const locale = await getLocale();
 
   return (
-    <html lang={locale} className={`${cormorant.variable} ${inter.variable} ${notoSerifKR.variable}`}>
+    <html lang={locale} className={`${cormorant.variable} ${inter.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap" />
+      </head>
       <body>
         <LocaleProvider locale={locale}>{children}</LocaleProvider>
         <AppBridge />
