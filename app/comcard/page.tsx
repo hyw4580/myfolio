@@ -179,7 +179,7 @@ function PhotoElement({ item, isSelected, isMain, isDark }: { item: PhotoItem; i
       zIndex: isSelected ? 10 : 5,
     }}>
       {item.src
-        ? <img src={item.src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", pointerEvents: "none" }} />
+        ? <div role="img" aria-label="" style={{ width: "100%", height: "100%", backgroundImage: `url("${item.src}")`, backgroundSize: "cover", backgroundPosition: "center 30%", pointerEvents: "none" }} />
         : <div style={{ width: "100%", height: "100%", background: isDark ? "#2A2A2A" : "#D8D4CF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", pointerEvents: "none" }}>
             <span style={{ fontSize: "20px", color: isDark ? "#555" : "#B0ACA8" }}>+</span>
             <span style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: isDark ? "#555" : "#A8A49F" }}>{isMain ? "Main" : `Photo`}</span>
@@ -1046,7 +1046,7 @@ function LayoutPanel({ canvas, photos, selectedFields, onApply, onUndo, canUndo,
                 <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
                   <span style={{ fontSize: "11px", color: "var(--text)", fontWeight: 500 }}>{p.name}{active && " ✓"}</span>
                   <span style={{ fontSize: "9px", color: "var(--muted)", lineHeight: 1.4 }}>{p.description}</span>
-                  {!fits && <span style={{ fontSize: "9px", color: "#b07a2a" }}>사진 {photos.length}장이면 칸이 작아져요</span>}
+                  {!fits && <span style={{ fontSize: "9px", color: "#b07a2a" }}>사진 {photos.length}장이면 배치가 어색해져요</span>}
                 </span>
               </button>
             );
@@ -1275,7 +1275,7 @@ function CardPreview({ canvas, choice, photos, order, fields, width }: {
         const p = L.photos[i]; const src = photos[oi]?.src;
         return (
           <div key={i} style={{ position: "absolute", left: p.x * s, top: p.y * s, width: p.w * s, height: p.h * s, background: choice.bgColor === "#0C0C0C" ? "#2A2A2A" : "#D8D4CF" }}>
-            {src && <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />}
+            {src && <div style={{ width: "100%", height: "100%", backgroundImage: `url("${src}")`, backgroundSize: "cover", backgroundPosition: "center 30%" }} />}
           </div>
         );
       })}

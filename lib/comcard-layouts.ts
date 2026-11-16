@@ -107,7 +107,13 @@ export function presetOptions(canvas: CanvasKind, count: number): PresetOption[]
     const L = buildLayout(canvas, p.id, n, p.style.nameSize, 12, p.style.statsLayout, 6);
     const thumbs = L.photos.slice(1).map(x => x.w);
     const minThumb = thumbs.length ? Math.min(...thumbs) : L.photos[0].w;
-    return { preset: p, minThumb, fits: minThumb >= (p.minThumbW ?? MIN_THUMB_W) };
+    // 사진 칸이 너무 납작하거나 길쭉하면(자연스러운 사진 비율이 안 나오면) 이 조합엔 안 맞는 양식
+    const shapesOk = L.photos.every((x, i) => (p.id === "cover" && i === 0) || (x.h / x.w >= MIN_R - 0.01 && x.h / x.w <= MAX_R + 0.01));
+    // 사진이 카드를 너무 적게 채우면(빈 공간이 큼) 이 조합엔 안 맞는 양식 — 미니멀은 여백이 특징이라 기준을 낮춤
+    const { w: CWd, h: CHd } = SIZE[canvas];
+    const coverage = L.photos.reduce((acc, x) => acc + x.w * x.h, 0) / (CWd * CHd);
+    const coverageOk = coverage >= (p.id === "minimal" ? 0.3 : 0.4);
+    return { preset: p, minThumb, fits: minThumb >= (p.minThumbW ?? MIN_THUMB_W) && shapesOk && coverageOk };
   }).sort((a, b) => Number(b.fits) - Number(a.fits));
 }
 
@@ -126,45 +132,82 @@ const SIZE: Record<CanvasKind, { w: number; h: number }> = {
   portrait:  { w: 480, h: 680 },
   landscape: { w: 680, h: 480 },
 };
+/*
+ * 레이아웃 공통 규칙 (모든 양식)
+ * 1) 콘텐츠 영역 하나: 사진과 글자의 왼쪽·오른쪽 끝선을 같은 여백(M)에 맞춤
+ * 2) 빈 칸 없음: 사진 묶음은 영역 폭을 끝까지 채움 (마지막 줄이 적으면 그 줄 칸을 넓힘)
+ * 3) 칸 비율(세로/가로)은 MIN_R~MAX_R 안에서 조정, 사진은 칸에 꽉 채워 잘림(얼굴 쪽 기준)
+ * 4) 메인 사진은 영역 왼쪽·위에 붙이고, 옆·아래 사진 묶음과 끝선(높이·폭)을 맞춤
+ * 5) 간격 고정: 사진 사이 GAP, 사진과 글자 사이 TEXT_GAP, 열 사이 COL_GAP
+ */
 const GAP = 4;
-const M = 16;        // 기본 바깥 여백
-const RATIO = 4 / 3; // 사진 세로/가로 비율
+const M = 16;          // 바깥 여백 = 콘텐츠 영역 끝선
+const TEXT_GAP = 14;   // 사진 묶음과 글자 사이
+const COL_GAP = 12;    // 메인 사진과 옆 열 사이
+const RATIO = 4 / 3;   // 기본 사진 비율 (세로/가로)
+const MIN_R = 0.72;    // 가장 납작한 칸
+const MAX_R = 1.5;     // 가장 길쭉한 칸
 
-/** rect 안에 n장을 3:4 칸으로 가장 크게 배치 (가로 가운데, 세로는 가운데 또는 위쪽) */
-function gridIn(rect: Rect, n: number, alignTop = false, maxCols = n): LayoutPhoto[] {
+/** 비율이 범위를 벗어난 만큼 점수를 깎음 */
+const ratioPenalty = (r: number) => (r < MIN_R ? 0.01 * (r / MIN_R) : r > MAX_R ? (MAX_R / r) ** 2 : 1); // 너무 납작한 칸은 거의 고르지 않음
+
+/**
+ * rect를 n장으로 빈틈없이 채우는 격자 — 줄마다 칸이 rect 폭 끝까지 늘어남.
+ * 열 수는 "가장 작은 칸이 가장 크고 비율이 자연스러운" 쪽으로 고름.
+ * 칸이 너무 길쭉해지면 높이를 줄이고 위쪽에 붙임(폭 끝선은 유지).
+ */
+function gridIn(rect: Rect, n: number, alignTop = true, maxCols = n): LayoutPhoto[] {
   if (n <= 0) return [];
-  let best = { cols: 1, rows: n, cellW: 0 };
+  let best: { counts: number[]; score: number } | null = null;
   for (let cols = 1; cols <= Math.min(n, maxCols); cols++) {
     const rows = Math.ceil(n / cols);
-    const cellW = Math.min(
-      (rect.w - GAP * (cols - 1)) / cols,
-      (rect.h - GAP * (rows - 1)) / rows / RATIO,
-    );
-    if (cellW > best.cellW) best = { cols, rows, cellW };
+    // 줄마다 칸 수를 고르게 (앞줄부터 하나씩 더)
+    const counts = Array.from({ length: rows }, (_, i) => Math.floor(n / rows) + (i < n % rows ? 1 : 0));
+    const ws = counts.map(k => (rect.w - GAP * (k - 1)) / k);
+    // 실제 줄 높이(가장 좁은 칸이 너무 길쭉해지지 않게 자른 값)로 평가
+    const rowH = Math.min((rect.h - GAP * (rows - 1)) / rows, Math.min(...ws) * MAX_R);
+    const fill = (rows * rowH + GAP * (rows - 1)) / rect.h; // 영역을 얼마나 채우는지
+    let score = Infinity;
+    for (const w of ws) score = Math.min(score, w * rowH * ratioPenalty(rowH / w));
+    score *= Math.sqrt(fill);
+    if (!best || score > best.score) best = { counts, score };
   }
-  const cellW = Math.max(20, Math.floor(best.cellW));
-  const cellH = Math.round(cellW * RATIO);
-  const totalW = best.cols * cellW + (best.cols - 1) * GAP;
-  const totalH = best.rows * cellH + (best.rows - 1) * GAP;
-  const sx = rect.x + Math.floor((rect.w - totalW) / 2);
-  const sy = alignTop ? rect.y : rect.y + Math.floor((rect.h - totalH) / 2);
-  return Array.from({ length: n }, (_, i) => ({
-    x: sx + (i % best.cols) * (cellW + GAP),
-    y: sy + Math.floor(i / best.cols) * (cellH + GAP),
-    w: cellW, h: cellH,
-  }));
+  const counts = best!.counts;
+  const rows = counts.length;
+  const widths = counts.map(k => (rect.w - GAP * (k - 1)) / k);
+  // 줄 높이: 영역을 나눈 값, 단 가장 좁은 칸이 MAX_R보다 길쭉해지지 않게
+  const rowH = Math.floor(Math.min((rect.h - GAP * (rows - 1)) / rows, Math.min(...widths) * MAX_R));
+  const totalH = rows * rowH + GAP * (rows - 1);
+  let y = alignTop ? rect.y : rect.y + Math.floor((rect.h - totalH) / 2);
+  const out: LayoutPhoto[] = [];
+  counts.forEach(k => {
+    // 마지막 칸이 정확히 오른쪽 끝선에 닿도록 정수 폭 분배
+    for (let j = 0; j < k; j++) {
+      const x0 = rect.x + Math.round(j * (rect.w + GAP) / k);
+      const x1 = rect.x + Math.round((j + 1) * (rect.w + GAP) / k) - GAP;
+      out.push({ x: x0, y, w: x1 - x0, h: rowH });
+    }
+    y += rowH + GAP;
+  });
+  return out;
 }
 
-/** rect 안에 들어가는 가장 큰 3:4 한 칸 */
-function fitOne(rect: Rect, alignTop = false, alignLeft = false): LayoutPhoto {
-  const w = Math.floor(Math.min(rect.w, rect.h / RATIO));
-  const h = Math.round(w * RATIO);
-  return {
-    x: alignLeft ? rect.x : rect.x + Math.floor((rect.w - w) / 2),
-    y: alignTop ? rect.y : rect.y + Math.floor((rect.h - h) / 2),
-    w, h,
-  };
+/** 메인 사진: 영역 왼쪽·위에 붙여 폭을 채움, 비율이 범위를 벗어나면 높이(길면)나 폭(납작하면)을 줄임 */
+function fitOne(rect: Rect): LayoutPhoto {
+  let w = Math.floor(rect.w);
+  const h = Math.floor(Math.min(rect.h, w * MAX_R));
+  if (h < w * MIN_R) w = Math.floor(h / MIN_R);
+  return { x: Math.round(rect.x), y: Math.round(rect.y), w, h };
 }
+/** 옆 열이 메인보다 짧게 끝나면 메인 높이를 옆 열에 맞춤 (메인 비율이 범위 안일 때만) */
+function matchHeight(main: LayoutPhoto, rest: LayoutPhoto[]): LayoutPhoto {
+  if (!rest.length) return main;
+  const rb = Math.max(...rest.map(p => p.y + p.h));
+  const h = rb - main.y;
+  return h < main.h && h / main.w >= MIN_R ? { ...main, h } : main;
+}
+const right = (p: LayoutPhoto) => p.x + p.w;
+const bottom = (p: LayoutPhoto) => p.y + p.h;
 
 const STAT_CELL_W = 58;  // 스탯 한 칸(라벨 + 값) 폭 여유
 const STAT_ROW_H = 28;   // 스탯 한 줄 높이
@@ -246,22 +289,24 @@ function layoutFor(canvas: CanvasKind, template: LayoutTemplate, count: number, 
   const size = Math.max(14, Math.min(44, Math.round(nameSize)));
   const n = Math.max(1, count);
   const portrait = canvas === "portrait";
+  const CW = W - 2 * M;      // 콘텐츠 폭
+  const CH = H - 2 * M;      // 콘텐츠 높이
 
   switch (template) {
     /* 큰 헤드샷 + 아래(세로형) / 옆(가로형) 보조 컷 + 이름·정보 */
     case "classic": {
       if (portrait) {
-        const t = textAtBottom(M + 4, W - 2 * M - 8, H - M, size, nameLen);
-        const areaH = t.y - M - 10;
-        const mainH = n === 1 ? areaH : Math.round(areaH * 0.7);
-        const main = fitOne({ x: M, y: M, w: W - 2 * M, h: mainH }, true);
-        const rest = gridIn({ x: M, y: main.y + main.h + GAP, w: W - 2 * M, h: areaH - main.h - GAP }, n - 1, true);
+        const t = textAtBottom(M, CW, H - M, size, nameLen);
+        const area = { x: M, y: M, w: CW, h: t.y - TEXT_GAP - M };
+        if (n === 1) return { photos: [fitOne(area)], textBlocks: t.blocks };
+        const main = fitOne({ ...area, h: Math.round(area.h * 0.66) });
+        const rest = gridIn({ x: M, y: bottom(main) + GAP, w: CW, h: area.y + area.h - bottom(main) - GAP }, n - 1, true);
         return { photos: [main, ...rest], textBlocks: t.blocks };
       }
-      const main = fitOne({ x: M, y: M, w: (W - 2 * M) * 0.42, h: H - 2 * M });
-      const rx = main.x + main.w + GAP * 3;
-      const t = textAtBottom(rx + 4, W - M - rx - 8, H - M, size, nameLen);
-      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: t.y - M - 10 }, n - 1);
+      const main = fitOne({ x: M, y: M, w: Math.round(CH / 1.4), h: CH });
+      const rx = right(main) + COL_GAP;
+      const t = textAtBottom(rx, W - M - rx, H - M, size, nameLen);
+      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: t.y - TEXT_GAP - M }, n - 1, true);
       return { photos: [main, ...rest], textBlocks: t.blocks };
     }
 
@@ -270,84 +315,90 @@ function layoutFor(canvas: CanvasKind, template: LayoutTemplate, count: number, 
       const textW = portrait ? 170 : 210;
       // 스탯이 옆 열에 안 들어가면(항목이 아주 많을 때) 텍스트를 아래 전체 폭으로 내림
       if (Math.ceil(Math.max(1, SPEC.statsCount) / 2) * STAT_CELL_W > textW) {
-        const t = textAtBottom(M + 4, W - 2 * M - 8, H - M, size, nameLen);
-        const photos = gridIn({ x: M, y: M, w: W - 2 * M, h: t.y - M - 12 }, n, true, 2);
+        const t = textAtBottom(M, CW, H - M, size, nameLen);
+        const photos = gridIn({ x: M, y: M, w: CW, h: t.y - TEXT_GAP - M }, n, true, portrait ? 2 : n);
         return { photos, textBlocks: t.blocks };
       }
-      const gridArea = { x: M, y: M, w: W - 2 * M - textW - 12, h: H - 2 * M };
-      const photos = gridIn(gridArea, n, false, 2);
+      const photos = gridIn({ x: M, y: M, w: CW - textW - COL_GAP, h: CH }, n, true, portrait ? 2 : 3);
       const tx = W - M - textW;
       const s = fitNameSize(size, textW, nameLen);
-      const blocks = placeText({ x: tx, y: M + 8, w: textW, h: textHeight(s, textW) }, s);
+      const blocks = placeText({ x: tx, y: M, w: textW, h: textHeight(s, textW) }, s);
       return { photos, textBlocks: blocks };
     }
 
-    /* 대표 사진을 위쪽/왼쪽에 꽉 채우고, 이름은 사진 위 아래쪽에 얹음 */
+    /* 대표 사진을 꽉 채우고(여백 없음), 이름은 사진 위 아래쪽에 얹음 */
     case "cover": {
       if (portrait) {
-        const main = fitOne({ x: 0, y: 0, w: W, h: H }, true); // 480 x 640, 위쪽 기준
-        const restRow = n > 1 ? { x: Math.round(W * 0.55), y: main.h - 12 - 110, w: Math.round(W * 0.45) - 12, h: 110 } : null;
-        const rest = restRow ? gridIn(restRow, n - 1, false) : [];
-        const t = textAtBottom(M + 4, Math.round(W * 0.5) - M, main.h - 12, size, nameLen);
+        const main = { x: 0, y: 0, w: W, h: Math.round(W * RATIO) }; // 480 x 640, 아래 40은 바탕 띠
+        const stripH = 110;
+        const rest = n > 1 ? gridIn({ x: Math.round(W * 0.55), y: bottom(main) - M - stripH, w: W - M - Math.round(W * 0.55), h: stripH }, n - 1, false, n - 1) : [];
+        const t = textAtBottom(M, Math.round(W * 0.55) - M - COL_GAP, bottom(main) - M, size, nameLen);
         return { photos: [main, ...rest], textBlocks: t.blocks };
       }
-      const main = fitOne({ x: 0, y: 0, w: W, h: H }, true, true); // 360 x 480, 왼쪽 기준
-      const rx = main.w + 12;
-      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: H - 2 * M }, n - 1);
-      const t = textAtBottom(M + 4, main.w - 2 * M, H - M, size, nameLen);
+      const main = { x: 0, y: 0, w: Math.round(H / RATIO), h: H }; // 360 x 480, 왼쪽 꽉 채움
+      const rx = right(main) + COL_GAP;
+      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: CH }, n - 1, true);
+      const t = textAtBottom(M, main.w - 2 * M, H - M, size, nameLen);
       return { photos: [main, ...rest], textBlocks: t.blocks };
     }
 
-    /* 왼쪽 큰 헤드샷 + 오른쪽 보조 컷 + 하단 전체 폭 정보 띠 */
+    /* 왼쪽 큰 헤드샷 + 오른쪽 보조 컷 (같은 높이) + 아래 전체 폭 정보 띠 */
     case "zed": {
-      const t = textAtBottom(M + 4, W - 2 * M - 8, H - M, size, nameLen);
-      const areaH = t.y - M - 10;
-      const main = fitOne({ x: M, y: M, w: (W - 2 * M) * (portrait ? 0.55 : 0.4), h: areaH }, true, true);
-      const rx = main.x + main.w + GAP * 2;
-      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: main.h }, n - 1, true, 2);
-      // 세로형은 사진 바로 아래에 정보 띠를 붙임 (아래쪽 빈 공간 방지)
-      if (portrait) {
-        const s2 = fitNameSize(size, W - 2 * M - 8, nameLen);
-        const y = main.y + main.h + 20;
-        return { photos: [main, ...rest], textBlocks: placeText({ x: M + 4, y, w: W - 2 * M - 8, h: textHeight(s2, W - 2 * M - 8) }, s2) };
+      const t = textAtBottom(M, CW, H - M, size, nameLen);
+      const areaH = t.y - TEXT_GAP - M;
+      const main0 = fitOne({ x: M, y: M, w: Math.round(CW * (portrait ? 0.55 : 0.4)), h: areaH });
+      const rx = right(main0) + GAP;
+      const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: main0.h }, n - 1, true, portrait ? 2 : 3);
+      const main = matchHeight(main0, rest);
+      // 메인이 영역보다 짧으면 정보 띠를 사진 바로 아래로 (아래쪽 빈 공간 방지)
+      if (bottom(main) < t.y - TEXT_GAP - 1) {
+        const s2 = fitNameSize(size, CW, nameLen);
+        return { photos: [main, ...rest], textBlocks: placeText({ x: M, y: bottom(main) + TEXT_GAP + 6, w: CW, h: textHeight(s2, CW) }, s2) };
       }
       return { photos: [main, ...rest], textBlocks: t.blocks };
     }
 
     /* 위쪽 이름 헤더 + 아래 같은 크기 룩들 */
     case "showcase": {
-      const s = fitNameSize(size, W - 2 * M - 8, nameLen);
-      const headH = textHeight(s, W - 2 * M - 8);
-      const blocks = placeText({ x: M + 4, y: M + 4, w: W - 2 * M - 8, h: headH }, s);
-      const photos = gridIn({ x: M, y: M + headH + 12, w: W - 2 * M, h: H - 2 * M - headH - 12 }, n, true);
+      const s = fitNameSize(size, CW, nameLen);
+      const headH = textHeight(s, CW);
+      const blocks = placeText({ x: M, y: M, w: CW, h: headH }, s);
+      const gy = M + headH + TEXT_GAP;
+      const photos = gridIn({ x: M, y: gy, w: CW, h: H - M - gy }, n, true);
       return { photos, textBlocks: blocks };
     }
 
-    /* 넓은 여백 안에 작은 사진, 그 아래 텍스트 */
+    /* 넓은 여백 안에 사진, 그 아래 텍스트 (같은 끝선) */
     case "minimal": {
       const MM = portrait ? 48 : 40;
       const t = textAtBottom(MM, W - 2 * MM, H - MM, size, nameLen);
-      const photos = gridIn({ x: MM, y: MM, w: W - 2 * MM, h: t.y - MM - 24 }, n);
+      const photos = gridIn({ x: MM, y: MM, w: W - 2 * MM, h: t.y - TEXT_GAP - 10 - MM }, n, true);
       return { photos, textBlocks: t.blocks };
     }
 
-    /* 비대칭: 큰 메인 + 세로 열(세로형) / 위 한 줄(가로형) */
+    /* 비대칭: 큰 메인 + 옆 열(세로형, 같은 높이) / 위 한 줄(가로형) */
     case "editorial":
     default: {
       if (portrait) {
-        const t = textAtBottom(M + 4, W - 2 * M - 8, H - M, size, nameLen);
-        const areaH = t.y - M - 10;
-        const mainW = n === 1 ? W - 2 * M : Math.round((W - 2 * M) * 0.7);
-        const main = fitOne({ x: M, y: M, w: mainW, h: areaH }, true, true);
-        const rx = main.x + main.w + GAP;
-        const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: main.h }, n - 1);
+        const t = textAtBottom(M, CW, H - M, size, nameLen);
+        const areaH = t.y - TEXT_GAP - M;
+        if (n === 1) return { photos: [fitOne({ x: M, y: M, w: CW, h: areaH })], textBlocks: t.blocks };
+        const main0 = fitOne({ x: M, y: M, w: Math.round(CW * 0.68), h: areaH });
+        const rx = right(main0) + GAP;
+        const rest = gridIn({ x: rx, y: M, w: W - M - rx, h: main0.h }, n - 1, true, 2);
+        const main = matchHeight(main0, rest);
+        // 사진이 영역보다 짧아지면 글자를 사진 바로 아래로
+        if (bottom(main) < t.y - TEXT_GAP - 1) {
+          const s2 = fitNameSize(size, CW, nameLen);
+          return { photos: [main, ...rest], textBlocks: placeText({ x: M, y: bottom(main) + TEXT_GAP + 6, w: CW, h: textHeight(s2, CW) }, s2) };
+        }
         return { photos: [main, ...rest], textBlocks: t.blocks };
       }
-      const main = fitOne({ x: M, y: M, w: (W - 2 * M) * 0.45, h: H - 2 * M }, true);
-      const rx = main.x + main.w + 20;
+      const main = fitOne({ x: M, y: M, w: Math.round(CH / 1.4), h: CH });
+      const rx = right(main) + COL_GAP;
       const rw = W - M - rx;
       const t = textAtBottom(rx, rw, H - M, size, nameLen);
-      const rowH = Math.min(Math.round((H - 2 * M) * 0.42), t.y - M - 16);
+      const rowH = Math.min(Math.round(CH * 0.45), t.y - TEXT_GAP - M);
       const rest = gridIn({ x: rx, y: M, w: rw, h: rowH }, n - 1, true);
       return { photos: [main, ...rest], textBlocks: t.blocks };
     }

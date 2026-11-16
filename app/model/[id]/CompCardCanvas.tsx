@@ -69,7 +69,7 @@ export default function CompCardCanvas({ canvasType, data, maxWidth = 900, maxHe
               overflow: "hidden", background: "#e8e8e8",
             }}>
               {item.src
-                ? <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ? <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }} />
                 : <div style={{ width: "100%", height: "100%", background: "#e0e0e0" }} />
               }
             </div>
