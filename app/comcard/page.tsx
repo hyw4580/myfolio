@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useBillingStatus } from "@/lib/billing/client";
 import ShareButtons from "../components/ShareButtons";
 import { useIsNativeApp } from "@/lib/native";
-import { FREE_EXPORT_CARD_LIMIT, PRO_PLAN, formatKRW } from "@/lib/billing/plans";
+import { FREE_EXPORT_CARD_LIMIT, FREE_FEATURED_LIMIT, PRO_PLAN, formatKRW } from "@/lib/billing/plans";
 import { track, tallyEdit, startEditorSession, endEditorSession, checkpointEditorSession, setEditorLayout, muteTallies, talliesMuted, type EditKind } from "@/lib/analytics";
 import { MIN_TEMPLATE_USERS, type ComboInsight } from "@/lib/comcard-ranking";
 import { buildLayout, safeOrder, PRESET_BY_ID, presetOptions, availablePresets, isContactField, isStatsField, type LayoutTemplate, type Preset } from "@/lib/comcard-layouts";
@@ -1649,7 +1649,7 @@ function ComcardPageInner() {
 
   // ── 다운로드 권한 확인: 저장 → 서버에서 무료 1장/유료 무제한 확인 ──
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paywallReason, setPaywallReason] = useState<"limit" | "changed">("limit");
+  const [paywallReason, setPaywallReason] = useState<"limit" | "changed" | "publish">("limit");
   const [shareCardId, setShareCardId] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   /** 공유: 저장 → 공개로 전환(무료 1장 한도 확인) → 공유 창 */
@@ -1661,7 +1661,7 @@ function ComcardPageInner() {
       const res = await fetch("/api/comcard/publish", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cardId, publish: true }),
       });
-      if (res.status === 402) { setPaywallOpen(true); track("paywall_shown", { reason: "publish" }); return; }
+      if (res.status === 402) { setPaywallReason("publish"); setPaywallOpen(true); track("paywall_shown", { reason: "publish" }); return; }
       if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.error ?? "공유를 준비하지 못했어요."); return; }
       setShareCardId(cardId);
       track("card_published", finalStyle());
@@ -2131,18 +2131,20 @@ function ExportNote() {
 }
 
 /** 무료 한도를 넘었을 때 뜨는 결제 안내 */
-function Paywall({ onClose, reason = "limit" }: { onClose: () => void; reason?: "limit" | "changed" }) {
+function Paywall({ onClose, reason = "limit" }: { onClose: () => void; reason?: "limit" | "changed" | "publish" }) {
   const inApp = useIsNativeApp();
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#fff", maxWidth: "400px", width: "100%", padding: "32px 28px", textAlign: "center" }}>
         <p style={{ fontSize: "11px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "10px" }}>myfolio Pro</p>
         <h2 className="font-display" style={{ fontSize: "26px", fontWeight: 400, marginBottom: "12px" }}>
-          {reason === "changed" ? "새 컴카드로 바뀌었어요" : "무료 다운로드를 모두 썼어요"}
+          {reason === "changed" ? "새 컴카드로 바뀌었어요" : reason === "publish" ? "무료 공개를 모두 썼어요" : "무료 다운로드를 모두 썼어요"}
         </h2>
         <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.7, marginBottom: "24px" }}>
           {reason === "changed"
             ? <>처음 다운로드했을 때 사진의 절반 이상이 바뀌어서 새 컴카드로 봐요.<br />무료 회원은 컴카드 {FREE_EXPORT_CARD_LIMIT}장까지 다운로드할 수 있어요.<br /></>
+            : reason === "publish"
+            ? <>무료 회원은 컴카드 {FREE_FEATURED_LIMIT}장까지 공개(링크 공유)할 수 있어요.<br />마이페이지에서 다른 카드를 비공개로 바꾸면 이 카드를 공개할 수 있어요.<br /></>
             : <>무료 회원은 컴카드 {FREE_EXPORT_CARD_LIMIT}장까지 다운로드할 수 있어요.<br /></>}
           {inApp ? <>Pro 회원은 무제한으로 다운로드할 수 있어요.<br /></> : <>Pro(월 {formatKRW(PRO_PLAN.priceKRW)}부터)로 무제한 다운로드하고 포트폴리오도 채워보세요.<br /></>}
           만든 카드는 저장돼 있어요.

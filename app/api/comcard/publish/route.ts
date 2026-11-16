@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { billingConfigured } from "@/lib/billing/server";
 import { getEntitlements } from "@/lib/billing/entitlements";
 import { FREE_FEATURED_LIMIT } from "@/lib/billing/plans";
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
 
   if (publish && !card.is_featured) {
     const admin = createAdminClient();
-    if (admin) { // 결제 설정 전에는 제한 없음
+    if (admin && billingConfigured()) { // 결제 설정(토스 키) 전에는 제한 없음
       const ent = await getEntitlements(admin, user.id);
       if (!ent.isPro) {
         const { count } = await supabase.from("comp_cards").select("id", { count: "exact", head: true })

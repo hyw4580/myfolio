@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canExportCard, cardPhotoSet, getEntitlements } from "@/lib/billing/entitlements";
+import { billingConfigured } from "@/lib/billing/server";
 
 const Body = z.object({ cardId: z.string().uuid(), kind: z.enum(["png", "pdf"]) });
 
@@ -24,8 +25,8 @@ export async function POST(request: Request) {
   if (!card) return NextResponse.json({ error: "카드를 찾을 수 없어요." }, { status: 404 });
 
   const admin = createAdminClient();
-  // 결제 기능 설정 전(서버 키 없음)에는 제한 없이 허용
-  if (!admin) return NextResponse.json({ ok: true, billing: "not_configured" });
+  // 결제 기능 설정 전(서버 키 또는 토스 키 없음)에는 제한 없이 허용
+  if (!admin || !billingConfigured()) return NextResponse.json({ ok: true, billing: "not_configured" });
 
   // 서버에 저장된 카드의 사진 기준으로 판단 (다운로드 직전에 항상 저장됨)
   const photos = cardPhotoSet((card.data as { photos?: { src?: string | null }[] } | null)?.photos);
