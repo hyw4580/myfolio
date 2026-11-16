@@ -45,14 +45,26 @@ export async function cancelPreview(admin: SupabaseClient, userId: string, sub: 
     const option: CancelOption = { kind: "period_end", until: sub.current_period_end, partialRefund: null, usedMonths: null, usedFeatures: [] };
     return { pay: null, option };
   }
-  const [state, { count: exports }] = await Promise.all([
+  const [state, { count: exports }, { count: ai }] = await Promise.all([
     usageState(admin, userId),
     admin.from("comcard_exports").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", pay.approved_at),
+    admin.from("ai_usage").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", pay.approved_at),
   ]);
-  const usedFeatures = proFeaturesUsed(pay.usage_baseline, { ...state, exportsSincePayment: exports ?? 0 });
+  const usedFeatures = proFeaturesUsed(pay.usage_baseline, { ...state, exportsSincePayment: exports ?? 0, aiSincePayment: ai ?? 0 });
   const option = decideCancel({
     plan: pay.plan ?? sub.plan, paidAmount: pay.amount, paidAt: new Date(pay.approved_at), periodEnd: new Date(sub.current_period_end),
     now, usedFeatures, alreadyRefunded: (pay.refunded_amount ?? 0) > 0,
   });
   return { pay, option };
+}
+
+/** 반복 환불 방지: 최근 90일 안에 '7일 미사용 전액 환불'을 2번 이상 받았으면 마지막 환불 후 30일 동안 새 구독을 막음 */
+export const REFUND_ABUSE = { windowDays: 90, maxRefunds: 2, cooldownDays: 30 };
+export async function refundCooldown(admin: SupabaseClient, userId: string): Promise<Date | null> {
+  const since = new Date(Date.now() - REFUND_ABUSE.windowDays * 86_400_000).toISOString();
+  const { data } = await admin.from("payments").select("refunded_at").eq("user_id", userId)
+    .eq("refund_reason", "full_7days").gte("refunded_at", since).order("refunded_at", { ascending: false });
+  if (!data || data.length < REFUND_ABUSE.maxRefunds) return null;
+  const until = new Date(new Date(data[0].refunded_at as string).getTime() + REFUND_ABUSE.cooldownDays * 86_400_000);
+  return until > new Date() ? until : null;
 }

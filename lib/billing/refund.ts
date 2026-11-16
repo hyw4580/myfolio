@@ -7,19 +7,20 @@
  *
  * 이 파일의 계산 함수는 서버·화면이 같이 씀. DB 조회는 refund-server.ts.
  */
-import { PLANS, FREE_FEATURED_LIMIT, planOf } from "./plans";
+import { PLANS, FREE_AI_MONTHLY_LIMIT, FREE_FEATURED_LIMIT, planOf } from "./plans";
 
 export const REFUND_WINDOW_DAYS = 7;
 
 /** 결제 시점의 사용 상태 (payments.usage_baseline) */
 export type UsageBaseline = { snapIds: string[]; videos: number; careerHash: string; featured: number };
 /** 지금 사용 상태 + 결제 후 다운로드 수 */
-export type UsageNow = UsageBaseline & { exportsSincePayment: number };
+export type UsageNow = UsageBaseline & { exportsSincePayment: number; aiSincePayment?: number };
 
 /** 결제 후 Pro 기능을 썼는지 — 어떤 걸 썼는지도 돌려줌 (안내 문구용) */
 export function proFeaturesUsed(base: UsageBaseline | null, now: UsageNow): string[] {
   const used: string[] = [];
   if (now.exportsSincePayment > 0) used.push("컴카드 다운로드");
+  if ((now.aiSincePayment ?? 0) > FREE_AI_MONTHLY_LIMIT) used.push("AI 추천 무제한");
   if (!base) return used.length ? used : ["이전 결제 기록 확인 불가"]; // 기준점이 없으면 안전하게 "사용함"으로
   const before = new Set(base.snapIds);
   if (now.snapIds.some(id => !before.has(id))) used.push("갤러리·스냅 사진 올리기");
