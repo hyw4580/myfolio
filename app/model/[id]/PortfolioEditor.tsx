@@ -6,6 +6,7 @@ import { FREE_FEATURED_LIMIT } from "@/lib/billing/plans";
 import { useIsNativeApp } from "@/lib/native";
 import Link from "next/link";
 import { BUILTIN_CONCEPTS, MAX_CONCEPTS_PER_PHOTO, conceptLabel, customConcept, type Concept } from "@/lib/photo-concepts";
+import { prepareVideo, VideoPrepareError } from "@/lib/video-prepare";
 
 type Snap     = { id: string; url: string; order: number; category: string; concepts?: string[]; ai_concepts?: string[] | null };
 type CompCard = { id: string; title: string; canvas_type: string; is_featured: boolean | null; data: { bgColor?: string; photos?: { src: string | null }[] } };
@@ -64,6 +65,7 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
   const [videoInput, setVideoInput]   = useState("");
   const [uploading,  setUploading]    = useState(false);
   const [vidUploading, setVidUploading] = useState(false);
+  const [vidStatus, setVidStatus] = useState("");
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const orderRef = useRef(Math.max(0, ...[...initialGallery, ...initialSnaps].map(p => p.order + 1)));
@@ -131,32 +133,37 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
     setEditing(null);
   };
 
-  const uploadVideo = async (file: File) => {
-    setVidUploading(true);
-    const ext  = file.name.split(".").pop();
-    const path = `${userId}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("videos").upload(path, file);
-    if (error) { alert(`영상 업로드 실패: ${error.message}`); }
-    else {
-      const { data: { publicUrl } } = supabase.storage.from("videos").getPublicUrl(path);
-      setVideos(prev => {
-        const next = [...prev, publicUrl];
-        supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
-        return next;
-      });
-    }
-    setVidUploading(false);
+  /** 영상 목록 저장 (실패하면 알림) */
+  const saveVideos = async (next: string[]) => {
+    const { error } = await supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
+    if (error) { alert(error.message.includes("PRO_REQUIRED") ? "영상은 Pro 회원만 추가할 수 있어요." : "영상 목록을 저장하지 못했어요."); return false; }
+    setVideos(next);
+    return true;
   };
 
-  const addVideoUrl = () => {
+  /** 영상 올리기: 60초 확인 → 1080p로 자동 변환(필요할 때) → 업로드 */
+  const uploadVideo = async (file: File) => {
+    setVidUploading(true); setVidStatus("영상 확인 중...");
+    try {
+      const { file: ready, converted } = await prepareVideo(file, p => setVidStatus(`1080p로 변환 중 ${Math.round(p * 100)}%`));
+      setVidStatus(converted ? "변환 완료 · 업로드 중..." : "업로드 중...");
+      const ext = ready.type === "video/mp4" ? "mp4" : (ready.name.split(".").pop() || "mp4");
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("videos").upload(path, ready, { contentType: ready.type || undefined });
+      if (error) { alert(`영상 업로드 실패: ${error.message}`); return; }
+      const { data: { publicUrl } } = supabase.storage.from("videos").getPublicUrl(path);
+      await saveVideos([...videos, publicUrl]);
+    } catch (e) {
+      alert(e instanceof VideoPrepareError ? e.message : "영상을 처리하지 못했어요. 다른 영상으로 해 보거나 유튜브 링크로 추가해 주세요.");
+    } finally {
+      setVidUploading(false); setVidStatus("");
+    }
+  };
+
+  const addVideoUrl = async () => {
     const v = videoInput.trim();
     if (!v) return;
-    setVideos(prev => {
-      const next = [...prev, v];
-      supabase.from("profiles").update({ video_urls: next }).eq("id", userId);
-      return next;
-    });
-    setVideoInput("");
+    if (await saveVideos([...videos, v])) setVideoInput("");
   };
 
   const saveCareer = async () => {
@@ -498,10 +505,13 @@ export default function PortfolioEditor({ userId, initialGallery, initialSnaps, 
                   textTransform: "uppercase", border: "1px solid #ddd", color: "#555",
                   padding: "11px", textAlign: "center", cursor: vidUploading ? "default" : "pointer", opacity: vidUploading ? 0.6 : 1,
                 }}>
-                  {vidUploading ? "업로드 중..." : "↑ 비디오 파일 업로드"}
+                  {vidUploading ? (vidStatus || "업로드 중...") : "↑ 비디오 파일 업로드"}
                   <input type="file" accept="video/*" style={{ display: "none" }} disabled={vidUploading}
-                    onChange={e => { if (e.target.files?.[0]) uploadVideo(e.target.files[0]); }} />
+                    onChange={e => { if (e.target.files?.[0]) uploadVideo(e.target.files[0]); e.target.value = ""; }} />
                 </label>
+                <p style={{ fontSize: "11px", color: "#999", lineHeight: 1.6, margin: "-4px 0 12px", fontFamily: font }}>
+                  1분 이하 영상을 올려 주세요. 큰 영상은 1080p로 자동으로 줄여서 올려요 (변환 중에는 이 화면을 닫지 마세요). 더 긴 영상은 유튜브·비메오 링크로 추가할 수 있어요.
+                </p>
 
                 {/* URL 입력 */}
                 <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
